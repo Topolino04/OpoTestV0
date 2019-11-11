@@ -1,0 +1,152 @@
+﻿@page "/"
+
+@using XpoTutorial
+@using BlazorServerSideApplication.Services
+
+@inject PreguntaService PreguntaService
+@inject TemaService TemaService
+
+@inject RespuestaService RespuestaService
+
+<h1>Customers</h1>
+
+@if (preguntas == null)
+{
+    <p><em>cargando...</em></p>
+}
+else
+{
+
+    <DxDataGrid Data=@preguntas KeyFieldName="Oid"
+                AllowDataRowSelection=false PageSize="10" ShowFilterRow=true
+                RowRemoving=@( (dataItem) => this.OnRowRemoving(dataItem) )
+                RowUpdating=@( (updatingDataItem, values) => OnRowUpdating(updatingDataItem, values) )
+                RowInserting=@( (values) => OnRowInserting(values, typeof(Pregunta)) )>
+
+        <DxDataGridCommandColumn Width="100px"></DxDataGridCommandColumn>
+        <DxDataGridComboBoxColumn Field=@nameof(Pregunta.Tema)
+                                  Data="@temas"
+                                  ValueFieldName=@nameof( Tema.Oid)
+                                  TextFieldName=@nameof( Tema.Nombre) />
+        <DxDataGridColumn Field=@nameof(Pregunta.Enunciado)></DxDataGridColumn>
+        <DxDataGridColumn Field=@nameof(Pregunta.Explicacion)></DxDataGridColumn>
+        <DxDataGridCommandColumn Width="50px">
+            <CellTemplate>
+                <button class="btn btn-link dxbs-button" @onclick="@( () => OnClickCustomerOrders((Pregunta)context) )">Orders</button>
+            </CellTemplate>
+            <HeaderCellTemplate></HeaderCellTemplate>
+            <HeaderFilterCellTemplate></HeaderFilterCellTemplate>
+        </DxDataGridCommandColumn>
+    </DxDataGrid>
+
+    @if (PopupVisible)
+    {
+        <DxPopup HeaderText="Edit Orders" CloseButtonClick="@(() => PopupVisible = false)" CssClass="modal-xl">
+            <ChildContent>
+                @if (selectedCustomerOrders != null && SelectedCustomer != null)
+                {
+                    <DxDataGrid Data=@selectedCustomerOrders KeyFieldName="Oid"
+                                AllowDataRowSelection=false PageSize=5 ShowFilterRow=false
+                                RowRemoving=@( (dataItem) => this.OnRowRemoving(dataItem) )
+                                RowUpdating=@( (updatingDataItem, values) => OnRowUpdating(updatingDataItem, values))
+                                RowInserting=@( (values) => OnRowInserting(values, typeof(Respuesta)))>
+                        <DxDataGridCommandColumn Width="100px"></DxDataGridCommandColumn>
+                        <DxDataGridColumn Field=@nameof(Respuesta.Oid)></DxDataGridColumn>
+                        <DxDataGridColumn Field=@nameof(Respuesta.Correcta)></DxDataGridColumn>
+                        <DxDataGridColumn Field=@nameof(Respuesta.Explicacion)></DxDataGridColumn>
+                        <DxDataGridColumn Field=@nameof(Respuesta.Texto)></DxDataGridColumn>
+                        <DxDataGridColumn Field=@nameof(Respuesta.Pregunta)>
+                            <DisplayTemplate>
+                                <span>@(((Respuesta)context).Pregunta.Enunciado)</span>
+                            </DisplayTemplate>
+                            <EditTemplate>
+                                <DxComboBox Data=@preguntas TextFieldName="ContactName"
+                                            SelectedItem=@( SelectedCustomer )
+                                            SelectedItemChanged=@( customerReference => OnSelectedItemChanged(customerReference, ((CellEditContext)context)) )>
+                                </DxComboBox>
+                            </EditTemplate>
+                        </DxDataGridColumn>
+                    </DxDataGrid>
+                }
+            </ChildContent>
+
+        </DxPopup>
+    }
+}
+
+
+@code {
+
+    bool popupVisible = false;
+    bool PopupVisible { get => popupVisible; set { popupVisible = value; InvokeAsync(StateHasChanged); } }
+
+    private IQueryable<Pregunta> preguntas;
+    private IQueryable<Tema> temas;
+
+    private IQueryable<Respuesta> selectedCustomerOrders;
+
+
+    private Pregunta SelectedCustomer { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        preguntas = await PreguntaService.Get();
+        temas = await TemaService.Get();
+    }
+    async void OnRowInserting(Dictionary<string, object> values, Type type)
+    {
+        if (type == typeof(Pregunta))
+        {
+            await PreguntaService.Add(values);
+        }
+        else if (type == typeof(Respuesta))
+        {
+            await RespuestaService.Add(values, SelectedCustomer.Oid);
+        }
+        StateHasChanged();
+    }
+    async void OnRowUpdating(object item, Dictionary<string, object> values)
+    {
+        Pregunta customer = item as Pregunta;
+        if (customer != null)
+        {
+            await PreguntaService.Update(customer.Oid, values);
+        }
+        else
+        {
+            Respuesta order = item as Respuesta;
+            if (order != null)
+            {
+                await RespuestaService.Update(order.Oid, values);
+            }
+        }
+        StateHasChanged();
+    }
+    async void OnRowRemoving(object item)
+    {
+        Pregunta customer = item as Pregunta;
+        if (customer != null)
+        {
+            await PreguntaService.Delete(customer.Oid);
+        }
+        else
+        {
+            Respuesta order = item as Respuesta;
+            if (order != null)
+            {
+                await RespuestaService.Delete(order.Oid);
+            }
+        }
+        StateHasChanged();
+    }
+    async void OnClickCustomerOrders(Pregunta item)
+    {
+        SelectedCustomer = item;
+        selectedCustomerOrders = await RespuestaService.GetCustomerOrders(item.Oid);
+        PopupVisible = true;
+    }
+    void OnSelectedItemChanged(Pregunta customerReference, CellEditContext context)
+    {
+        context.OnChanged(customerReference != null ? (object)customerReference.Oid : null);
+    }
+}
