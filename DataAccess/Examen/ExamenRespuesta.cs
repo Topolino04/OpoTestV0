@@ -1,0 +1,47 @@
+﻿using DevExpress.Xpo;
+
+namespace BlazorServerSideApplication
+{
+    public class ExamenRespuesta : XPObject
+    {
+        public ExamenRespuesta(Session session) : base(session) { }
+
+        private ExamenPregunta pregunta;
+        [Association]
+        [Aggregated]
+        public ExamenPregunta Pregunta
+        {
+            get => pregunta;
+            set => SetPropertyValue(nameof(Pregunta), ref pregunta, value);
+        }
+
+        private string texto;
+        public string Texto
+        {
+            get => texto;
+            set => SetPropertyValue(nameof(Texto), ref texto, value);
+        }
+
+        private bool correcta;
+        public bool Correcta
+        {
+            get => correcta;
+            set => SetPropertyValue(nameof(Correcta), ref correcta, value);
+        }
+
+        private bool? seleccionada;
+        public bool? Seleccionada
+        {
+            get => seleccionada;
+            set => SetPropertyValue(nameof(Seleccionada), ref seleccionada, value);
+        }
+
+        private string explicacion;
+        [Size(200)]
+        public string Explicacion
+        {
+            get => explicacion;
+            set => SetPropertyValue(nameof(Explicacion), ref explicacion, value);
+        }
+    }
+}

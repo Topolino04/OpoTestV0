@@ -1,0 +1,21 @@
+﻿@page "/Temas"
+@attribute [Authorize]
+
+@inject TemaService TemaService
+
+
+<h3>Temas</h3>
+
+<DxTreeView Data="@temas"
+            AllowSelectNodes="true"
+            TextExpression="@((x) => ((Tema)x).Nombre)"
+            ChildrenExpression="@((x) => ((Tema)x).Hijos)">
+</DxTreeView>
+
+@code {
+    IQueryable<Tema> temas;
+    protected override async Task OnInitializedAsync()
+    {
+        temas = await TemaService.Get();
+    }
+}

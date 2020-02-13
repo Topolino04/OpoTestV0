@@ -1,22 +1,22 @@
 ﻿using DevExpress.Xpo;
 
-namespace XpoTutorial
+namespace BlazorServerSideApplication
 {
-    public class Respuesta : XPObject
+    public class PlantillaRespuesta : XPObject
     {
-        public Respuesta(Session session) : base(session) { }
+        public PlantillaRespuesta(Session session) : base(session) { }
 
-        private Pregunta pregunta;
+        private PlantillaPregunta pregunta;
         [Association]
         [Aggregated]
-        public Pregunta Pregunta
+        public PlantillaPregunta Pregunta
         {
             get => pregunta;
             set => SetPropertyValue(nameof(Pregunta), ref pregunta, value);
         }
 
-        private decimal texto;
-        public decimal Texto
+        private string texto;
+        public string Texto
         {
             get => texto;
             set => SetPropertyValue(nameof(Texto), ref texto, value);

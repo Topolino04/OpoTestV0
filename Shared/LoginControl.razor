@@ -1,0 +1,25 @@
+﻿@page "/loginControl"
+@using System.Web;
+<AuthorizeView>
+    <Authorized>
+        <b>Hello, @context.User.Identity.Name!</b>
+        <a class="ml-md-auto btn btn-primary"
+           href="/logout?returnUrl=/"
+           target="_top">Salir</a>
+    </Authorized>
+    <NotAuthorized>
+        <DxTextBox @bind-Text="@Username" ClearButtonDisplayMode="@DataEditorClearButtonDisplayMode.Auto" NullText="Usuario..." />
+        <DxTextBox @bind-Text="@Password" ClearButtonDisplayMode="@DataEditorClearButtonDisplayMode.Auto" Password="true" NullText="Usuario..." />
+        <a class="ml-md-auto btn btn-primary"
+           href="/login?paramUsername=@encode(@Username)&paramPassword=@encode(@Password)"
+           target="_top">Iniciar</a>
+    </NotAuthorized>
+</AuthorizeView>
+@code {
+    string Username = "";
+    string Password = "";
+    private string encode(string param)
+    {
+        return HttpUtility.UrlEncode(param);
+    }
+}

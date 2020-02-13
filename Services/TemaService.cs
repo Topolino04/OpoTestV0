@@ -3,14 +3,15 @@ using Newtonsoft.Json;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using XpoTutorial;
+using BlazorServerSideApplication;
 
 namespace BlazorServerSideApplication.Services
 {
 
-    public class TemaService : BaseService {
-        public TemaService(IDataLayer dataLayer, UnitOfWork modificationUnitOfWork)
-            : base(dataLayer, modificationUnitOfWork) { }
+    public class TemaService : BaseService<Tema>
+    {
+        public TemaService(IDataLayer dataLayer, UnitOfWork modificationUnitOfWork) : base(dataLayer, modificationUnitOfWork) { }
+        /*
         public Task<IQueryable<Tema>> Get() {
             var query = (IQueryable<Tema>)readUnitOfWork.Query<Tema>();
             return Task.FromResult(query);
@@ -39,5 +40,6 @@ namespace BlazorServerSideApplication.Services
                 await uow.CommitChangesAsync();
             }
         }
+        */
     }
 }

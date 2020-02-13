@@ -1,0 +1,100 @@
+﻿@page "/Preguntas"
+
+@attribute [Authorize]
+@inject PreguntaService PreguntaService
+@inject TemaService TemaService
+@inject RespuestaService RespuestaService
+
+@inject IJSRuntime JSRuntime;
+<h1>Preguntas</h1>
+
+@if (preguntas == null)
+{
+    <p><em>cargando...</em></p>
+}
+else
+{
+    <DxDataGrid Data=@preguntas KeyFieldName="Oid"
+                AllowDataRowSelection=false
+                PageSize="10"
+                ShowFilterRow=true
+                AutoCollapseDetailRow="true"
+                ShowDetailRow="true"
+                ShowPager="true"
+                ShowGroupPanel="true"
+                RowUpdating=@(async (item, values) => await PreguntaService.Update(item.Oid,values))
+                RowRemoving=@(async(item) => await PreguntaService.Delete(item.Oid))
+                RowInserting=@(async(values) => await PreguntaService.Add(values))>
+        <ChildContent>
+            <DxDataGridCommandColumn Width="100px"></DxDataGridCommandColumn>
+            <DxDataGridComboBoxColumn Field="Tema.Oid" Caption="Tema" Data="@temas" TextFieldName=@nameof(Tema.Nombre)>
+                <DisplayTemplate>
+                    @((context as PlantillaPregunta)?.Tema.Nombre)
+                </DisplayTemplate>
+            </DxDataGridComboBoxColumn>
+            <DxDataGridColumn Field=@nameof(PlantillaPregunta.Enunciado)></DxDataGridColumn>
+            <DxDataGridColumn Field=@nameof(PlantillaPregunta.Explicacion)>
+                <EditTemplate Context="context">
+                    @{
+                        var cellEditContext = (CellEditContext)context;
+                        var multiLineText = (string)cellEditContext.CellValue;
+                    }
+                    <textarea class="form-control" @onchange="@(changeEventArgs => cellEditContext.OnChanged(changeEventArgs.Value))">@multiLineText</textarea>
+                </EditTemplate>
+            </DxDataGridColumn>
+        </ChildContent>
+        <DetailRowTemplate>
+            <DxDataGrid Data=@context.Respuestas KeyFieldName="Oid"
+                        AllowDataRowSelection=false PageSize=15 ShowFilterRow=false
+                        RowUpdating=@(async (item, values) => await RespuestaService.Update(item.Oid,values))
+                        RowRemoving=@(async(item) => await RespuestaService.Delete(item.Oid))
+                        RowInserting=@(async(values) => await RespuestaService.Add(values))>
+                <ChildContent>
+                    <DxDataGridCommandColumn Width="100px"></DxDataGridCommandColumn>
+
+                    <DxDataGridColumn Field=@nameof(PlantillaRespuesta.Oid) Visible="false"></DxDataGridColumn>
+                    <DxDataGridColumn Field=@nameof(PlantillaRespuesta.Texto) />
+                    <DxDataGridColumn Field=@nameof(PlantillaRespuesta.Correcta)>
+                        <DisplayTemplate Context="detailContext">
+                            @{
+                                    var correcta = ((PlantillaRespuesta)detailContext).Correcta;
+                                <DxCheckBox Checked="@correcta" Enabled="false"> @(correcta ? "Correcta" : "Incorrecta") </DxCheckBox>
+                            }
+                        </DisplayTemplate>
+                        <EditTemplate Context="detailContext">
+                            @{
+                                    var cellEditContext = (CellEditContext)detailContext;
+                                    var correcta = (bool)cellEditContext.CellValue;
+                            }
+                            <DxCheckBox Checked="correcta" CheckedChanged="@((x) => cellEditContext.OnChanged(x))">@(correcta ? "Correcta" : "Incorrecta")</DxCheckBox>
+                        </EditTemplate>
+                    </DxDataGridColumn>
+                    <DxDataGridColumn Field=@nameof(PlantillaRespuesta.Explicacion)>
+                        <EditTemplate Context="detailContext">
+                            @{
+                                    var cellEditContext = (CellEditContext)detailContext;
+                                    var multiLineText = (string)cellEditContext.CellValue;
+                            }
+                            <textarea class="form-control" @onchange="@(changeEventArgs => cellEditContext.OnChanged(changeEventArgs.Value))">@multiLineText</textarea>
+                        </EditTemplate>
+                    </DxDataGridColumn>
+                </ChildContent>
+            </DxDataGrid>
+        </DetailRowTemplate>
+    </DxDataGrid>
+}
+
+
+@code {
+
+    private IQueryable<PlantillaPregunta> preguntas;
+    private IQueryable<Tema> temas;
+
+    private PlantillaPregunta SelectedPregunta { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        preguntas = await PreguntaService.Get();
+        temas = await TemaService.Get();
+    }
+}

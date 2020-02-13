@@ -1,0 +1,116 @@
+﻿@page "/Examenes/{Oid:int}"
+
+@inject ExamenService ExamenesService
+
+
+
+<h3>Examenes</h3>
+
+@if (examen == null)
+{
+    <p><em>cargando...</em></p>
+}
+else
+{
+    if (preguntaActual != null)
+    {
+        <div class="card">
+            <div class="card-header">
+                <h5> @preguntaActual.Enunciado </h5>
+                @if (PreguntaActual.Estado.HasValue)
+                {<h6 class="card-subtitle mb-2 text-muted">@preguntaActual.Explicacion</h6>}
+            </div>
+            <div class="card-body">
+                <div class="list-group">
+                    @foreach (var respuesta in preguntaActual.Respuestas.OrderBy(x => x.Oid))
+                    {
+                        if (preguntaActual.Estado.HasValue)
+                        {
+                            if (respuesta.Correcta)
+                            {
+                                <a class="list-group-item list-group-item-action list-group-item-success">
+                                    <p class="mb-1">@respuesta.Texto</p>
+                                    @if (PreguntaActual.Estado.HasValue)
+                                    {
+                                        <small>@respuesta.Explicacion</small>
+                                    }
+                                </a>
+                            }
+                            else if (respuesta.Seleccionada ?? false)
+                            {
+                                <a class="list-group-item list-group-item-action list-group-item-danger">
+                                    <p class="mb-1">@respuesta.Texto</p>
+                                    @if (PreguntaActual.Estado.HasValue)
+                                    {
+                                        <small>@respuesta.Explicacion</small>
+                                    }
+                                </a>
+                            }
+                            else
+                            {
+                                <a class="list-group-item list-group-item-action list-group-item-secondary">
+                                    <div class="col-lg-6">
+                                        <p class="mb-1">@respuesta.Texto</p>
+                                    </div>
+                                    @if (PreguntaActual.Estado.HasValue)
+                                    {
+                                        <div class="col-lg-6">
+                                            <small>@respuesta.Explicacion</small>
+                                        </div>
+                                    }
+                                </a>
+                            }
+                        }
+                        else
+                        {
+                            <a class="list-group-item list-group-item-action @(respuesta.Seleccionada ?? false ?"list-group-item-primary":"list-group-item-secondary")" @onclick="() => respuesta.Seleccionada = !(respuesta.Seleccionada ?? false)">@respuesta.Texto</a>
+                        }
+                    }
+                </div>
+            </div>
+            <div class="card-footer">
+                <div class="btn-toolbar justify-content-between">
+                    <button type="button" class="btn btn-primary" @onclick="Resolver">Resolver pregunta</button>
+                    <div class="btn-group">
+                        @foreach (var pregunta in examen.Preguntas.OrderBy(x => x.Oid))
+                        {
+                            <button type="button" class="btn btn-@(pregunta.Estado.HasValue? (pregunta.Estado.Value ?"success":"danger"):"secondary")" @onclick="() => PreguntaActual = pregunta">@pregunta.Oid</button>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+    else
+    {
+        <p><em>cargando...</em></p>
+    }
+}
+@code {
+
+    [Parameter] public int Oid { get; set; }
+
+    Examen examen;
+    ExamenPregunta preguntaActual;
+    ExamenPregunta PreguntaActual
+    {
+        get => preguntaActual;
+        set
+        {
+            preguntaActual = value;
+            InvokeAsync(StateHasChanged);
+        }
+    }
+
+    async void Resolver()
+    {
+        preguntaActual = await ExamenesService.ResolverPregunta(PreguntaActual.Oid, PreguntaActual.Respuestas.Where(x => x.Seleccionada ?? false).Select(x => x.Oid).ToArray());
+        examen = await ExamenesService.GetByKey(Oid);
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        examen = await ExamenesService.GetByKey(Oid);
+        preguntaActual = examen.Preguntas[0];
+    }
+}

@@ -3,7 +3,7 @@ using DevExpress.Xpo.Metadata;
 using System.Collections.Generic;
 using System.Reflection;
 
-namespace XpoTutorial {
+namespace BlazorServerSideApplication {
     public class SampleJsonSerializationContractResolver : Newtonsoft.Json.Serialization.DefaultContractResolver {
         public bool SerializeCollections { get; set; } = false;
         public bool SerializeReferences { get; set; } = true;
@@ -12,7 +12,7 @@ namespace XpoTutorial {
 
         public SampleJsonSerializationContractResolver() {
             dictionary = new ReflectionDictionary();
-            dictionary.GetDataStoreSchema(typeof(Pregunta), typeof(Respuesta));
+            dictionary.GetDataStoreSchema(Assembly.GetExecutingAssembly());
         }
 
         protected override List<MemberInfo> GetSerializableMembers(Type objectType) {
@@ -38,7 +38,7 @@ namespace XpoTutorial {
 }
 
 namespace Microsoft.Extensions.DependencyInjection {
-    using XpoTutorial;
+    using BlazorServerSideApplication;
 
     public static class SampleJsonMvcBuilderExtensions {
         public static IMvcBuilder AddDxSampleModelJsonOptions(this IMvcBuilder builder, Action<SampleJsonSerializationContractResolver> setupAction = null) {

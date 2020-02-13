@@ -6,10 +6,10 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.HttpsPolicy;
+using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-//using BlazorServerSideApplication.Data; //Comment out.
-using XpoTutorial;
+using BlazorServerSideApplication;
 using Microsoft.Extensions.Configuration;
 using BlazorServerSideApplication.Services;
 
@@ -31,23 +31,26 @@ namespace BlazorServerSideApplication
         {
             services.AddRazorPages();
             services.AddServerSideBlazor(x => x.DetailedErrors = true);
-            //Added lines begin.
-            //services.AddSingleton<WeatherForecastService>();
+            services.Configure<CookiePolicyOptions>(options =>
+            {
+                options.CheckConsentNeeded = context => true;
+                options.MinimumSameSitePolicy = SameSiteMode.None;
+            });
+            services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme).AddCookie();
             services.AddScoped<PreguntaService>();
             services.AddScoped<RespuestaService>();
+            services.AddScoped<ExamenService>();
             services.AddScoped<TemaService>();
             services.AddXpoDefaultDataLayer(ServiceLifetime.Singleton, dl => dl
                 .UseConnectionString(Configuration.GetConnectionString("ImMemoryDataStore"))
                 .UseThreadSafeDataLayer(true)
                 .UseConnectionPool(false) // Remove this line if you use a database server like SQL Server, Oracle, PostgreSql etc.
                 .UseAutoCreationOption(DevExpress.Xpo.DB.AutoCreateOption.DatabaseAndSchema) // Remove this line if the database already exists
-                .UseEntityTypes(typeof(Pregunta), typeof(Respuesta), typeof(Tema)) // Pass all of your persistent object types to this method.
+                .UseEntityTypes(System.Reflection.Assembly.GetExecutingAssembly().DefinedTypes.Where(x => x.GetInterface(typeof(DevExpress.Xpo.IXPSimpleObject).FullName) != null).ToArray()) // Pass all of your persistent object types to this method.
             );
             services.AddXpoDefaultUnitOfWork();
-            //Added lines end.
         }
 
-        // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
             if (env.IsDevelopment())
@@ -61,10 +64,11 @@ namespace BlazorServerSideApplication
             }
 
             app.UseHttpsRedirection();
-
             app.UseStaticFiles();
-
             app.UseRouting();
+
+            app.UseCookiePolicy();
+            app.UseAuthentication();
 
             app.UseEndpoints(endpoints =>
             {
@@ -72,9 +76,9 @@ namespace BlazorServerSideApplication
                 endpoints.MapFallbackToPage("/_Host");
             });
 
-            //Added lines begin.
+#if DEBUG
             app.UseXpoDemoData();
-            //Added lines end.
+#endif
         }
     }
 }

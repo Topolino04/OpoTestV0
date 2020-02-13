@@ -4,7 +4,7 @@ using Newtonsoft.Json.Linq;
 using System;
 using System.Globalization;
 
-namespace XpoTutorial {
+namespace BlazorServerSideApplication {
     public static class JsonPopulateObjectHelper {
         public static void PopulateObject(string json, Session session, PersistentBase obj) {
             PopulateObject(json, session, obj.ClassInfo, obj);

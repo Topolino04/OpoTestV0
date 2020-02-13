@@ -3,7 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace XpoTutorial
+namespace BlazorServerSideApplication
 {
     public static class DemoDataHelper
     {
@@ -46,9 +46,17 @@ namespace XpoTutorial
 
         public static void Seed(UnitOfWork uow)
         {
-            int ordersCnt = uow.Query<Respuesta>().Count();
-            if (ordersCnt > 0)
-                return;
+            int ordersCnt = uow.Query<PlantillaRespuesta>().Count();
+            if (ordersCnt > 0) return;
+
+            var temas = new Tema[]
+            {
+                new Tema(uow) { Nombre = "Tema 1" },
+                new Tema(uow) { Nombre = "Tema 2" },
+                new Tema(uow) { Nombre = "Tema 3" },
+                new Tema(uow) { Nombre = "Tema 4" }
+            };
+
             var names = new KeyValuePair<string, string>[firstNames.Length * lastNames.Length];
             for (int i = 0; i < firstNames.Length * lastNames.Length; i++)
             {
@@ -58,29 +66,40 @@ namespace XpoTutorial
             }
             foreach (var t in names)
             {
-                CreateCustomer(uow, t.Key, t.Value);
+                CreateCustomer(uow, t.Key, t.Value, temas[Random.Next(4)]);
             }
 
-            new Tema(uow) { Nombre = "Tema 1" };
-            new Tema(uow) { Nombre = "Tema 2" };
-            new Tema(uow) { Nombre = "Tema 3" };
-            new Tema(uow) { Nombre = "Tema 4" };
-
+            for (int i = 0; i < 20; i++)
+            {
+                var result = new Examen(uow);
+                result.Temas.Add(temas[i % 4]);
+                result.Preguntas.AddRange(
+                    uow.Query<PlantillaPregunta>()
+                    .InTransaction()
+                    .Where(x => x.Tema == temas[i % 4])
+                    .Take(5)
+                    .Select(x => x.GenerarExamenPregunta()));
+                result.FechaInicio = DateTime.Now;
+            }
             uow.CommitChanges();
         }
 
-        private static void CreateCustomer(UnitOfWork uow, string firstName, string lastName)
+        private static void CreateCustomer(UnitOfWork uow, string firstName, string lastName, Tema tema)
         {
-            Pregunta customer = new Pregunta(uow);
-            customer.Enunciado = firstName;
-            customer.Explicacion = lastName;
+            PlantillaPregunta pregunta = new PlantillaPregunta(uow);
+            pregunta.Enunciado = firstName;
+            pregunta.Explicacion = lastName;
+            pregunta.Tema = tema;
+
             for (int i = 0; i < 10; i++)
             {
-                Respuesta order = new Respuesta(uow);
+                PlantillaRespuesta order = new PlantillaRespuesta(uow);
                 order.Explicacion = productNames[Random.Next(productNames.Length)];
-                order.Texto = Random.Next(1000) / 100m;
-                order.Pregunta = customer;
+                order.Texto = $"Respuesta  {Random.Next(1000)}";
+                order.Correcta = i == 5;
+                order.Pregunta = pregunta;
             }
+            pregunta.Enunciado = "La respuesta correcta es" + pregunta.Respuestas.First(x => x.Correcta).Texto;
         }
     }
 }

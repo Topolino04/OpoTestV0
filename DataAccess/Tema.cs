@@ -1,6 +1,6 @@
 ﻿using DevExpress.Xpo;
 
-namespace XpoTutorial
+namespace BlazorServerSideApplication
 {
     public class Tema : XPObject
     {
@@ -23,6 +23,21 @@ namespace XpoTutorial
         }
 
         [Association]
-        public XPCollection<Pregunta> Preguntas => GetCollection<Pregunta>(nameof(Preguntas));
+        public XPCollection<PlantillaPregunta> Preguntas => GetCollection<PlantillaPregunta>(nameof(Preguntas));
+
+        [Association]
+        public XPCollection<Examen> Examenes => GetCollection<Examen>(nameof(Examenes));
+
+        Tema padre;
+        [Association("TemasGerarquia")]
+        public Tema Padre
+        {
+            get => padre;
+            set => SetPropertyValue(nameof(Padre), ref padre, value);
+        }
+
+        [Association("TemasGerarquia")]
+        public XPCollection<Tema> Hijos => GetCollection<Tema>(nameof(Hijos));
+
     }
 }
