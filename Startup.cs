@@ -9,11 +9,12 @@ using Microsoft.AspNetCore.HttpsPolicy;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using BlazorServerSideApplication;
+using OpoTest;
 using Microsoft.Extensions.Configuration;
-using BlazorServerSideApplication.Services;
+using OpoTest.Services;
+using Microsoft.AspNetCore.Components.Authorization;
 
-namespace BlazorServerSideApplication
+namespace OpoTest
 {
     public class Startup
     {
@@ -31,24 +32,30 @@ namespace BlazorServerSideApplication
         {
             services.AddRazorPages();
             services.AddServerSideBlazor(x => x.DetailedErrors = true);
-            services.Configure<CookiePolicyOptions>(options =>
-            {
-                options.CheckConsentNeeded = context => true;
-                options.MinimumSameSitePolicy = SameSiteMode.None;
-            });
-            services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme).AddCookie();
-            services.AddScoped<PreguntaService>();
-            services.AddScoped<RespuestaService>();
-            services.AddScoped<ExamenService>();
-            services.AddScoped<TemaService>();
+            services.AddAuthentication();
+            services.AddProtectedBrowserStorage();
+            services.AddScoped<AuthenticationStateProvider, AutenticationService>();
+
             services.AddXpoDefaultDataLayer(ServiceLifetime.Singleton, dl => dl
-                .UseConnectionString(Configuration.GetConnectionString("ImMemoryDataStore"))
+#if DEBUG
+
+                .UseInMemoryDataStore(true)
+#else
+                .UseConnectionString(Configuration.GetConnectionString("MSS"))
+#endif
                 .UseThreadSafeDataLayer(true)
-                .UseConnectionPool(false) // Remove this line if you use a database server like SQL Server, Oracle, PostgreSql etc.
                 .UseAutoCreationOption(DevExpress.Xpo.DB.AutoCreateOption.DatabaseAndSchema) // Remove this line if the database already exists
                 .UseEntityTypes(System.Reflection.Assembly.GetExecutingAssembly().DefinedTypes.Where(x => x.GetInterface(typeof(DevExpress.Xpo.IXPSimpleObject).FullName) != null).ToArray()) // Pass all of your persistent object types to this method.
             );
-            services.AddXpoDefaultUnitOfWork();
+            services.AddScoped<ExamenService>();
+            services.AddScoped<XpoService<ExamenPregunta>>();
+            services.AddScoped<XpoService<ExamenRespuesta>>();
+
+            services.AddScoped<XpoService<PlantillaPregunta>>();
+            services.AddScoped<XpoService<PlantillaRespuesta>>();
+            services.AddScoped<XpoService<Tema>>();
+
+
         }
 
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)

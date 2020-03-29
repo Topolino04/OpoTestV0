@@ -6,16 +6,15 @@
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Bootswatch" Version="4.0.0" />
-    <PackageReference Include="DevExpress.Blazor" Version="19.1.10" />
+    <PackageReference Include="DevExpress.Blazor" Version="19.2.3" />
+    <PackageReference Include="DevExpress.Blazor.es" Version="19.2.3" />
     <PackageReference Include="DevExpress.Xpo" Version="19.2.6" />
     <PackageReference Include="DevExpress.Xpo.es" Version="19.2.6" />
     <PackageReference Include="DevExpress.Xpo.Extensions.es" Version="19.2.6" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication" Version="2.2.0" />
     <PackageReference Include="Microsoft.AspNetCore.Mvc.NewtonsoftJson" Version="3.1.1" />
+    <PackageReference Include="Microsoft.AspNetCore.ProtectedBrowserStorage" Version="0.1.0-alpha.19521.1" />
     <PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="3.1.1" />
     <PackageReference Include="Microsoft.VisualStudio.Web.CodeGeneration.Design" Version="3.1.1" />
-  </ItemGroup>
-  <ItemGroup>
-    <Folder Include="DataAccess\Componentes\" />
   </ItemGroup>
 </Project>

@@ -1,5 +1,5 @@
 ﻿@page "/"
-@inject AuthenticationStateProvider AuthenticationStateProvider
+
 
 <div class="jumbotron">
     <h1 class="display-4">Página de Aroa</h1>
@@ -11,21 +11,4 @@
 
 @code {
 
-
-    public AuthenticationState state;
-
-    public string User { get; set; }
-    public string Password { get; set; }
-
-    private async Task Login()
-    {
-        //state = await AuthenticationStateProvider.LoginAsync(User, Password);
-        //state.User = new System.Security.Claims.ClaimsPrincipal()
-        await InvokeAsync(StateHasChanged);
-    }
-
-    protected override async Task OnInitializedAsync()
-    {
-        state = await AuthenticationStateProvider.GetAuthenticationStateAsync();
-    }
 }

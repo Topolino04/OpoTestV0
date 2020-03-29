@@ -2,11 +2,11 @@
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace BlazorServerSideApplication {
+namespace OpoTest {
     public static class ApplicationBuilderExtensions {
         public static IApplicationBuilder UseXpoDemoData(this IApplicationBuilder app) {
             using(var scope = app.ApplicationServices.GetService<IServiceScopeFactory>().CreateScope()) {
-                UnitOfWork uow = scope.ServiceProvider.GetService<UnitOfWork>();
+                UnitOfWork uow = new UnitOfWork( scope.ServiceProvider.GetService<IDataLayer>());
                 DemoDataHelper.Seed(uow);
             }
             return app;

@@ -1,7 +1,7 @@
 ﻿using DevExpress.Xpo;
 using System.Linq;
 
-namespace BlazorServerSideApplication
+namespace OpoTest
 {
     public class ExamenPregunta : XPObject
     {

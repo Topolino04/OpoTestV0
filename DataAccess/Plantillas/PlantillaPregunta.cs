@@ -2,7 +2,7 @@
 using System.Linq;
 using DevExpress.Xpo;
 
-namespace BlazorServerSideApplication
+namespace OpoTest
 
 {
     public class PlantillaPregunta : XPObject

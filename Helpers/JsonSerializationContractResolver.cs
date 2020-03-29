@@ -3,7 +3,7 @@ using DevExpress.Xpo.Metadata;
 using System.Collections.Generic;
 using System.Reflection;
 
-namespace BlazorServerSideApplication {
+namespace OpoTest {
     public class SampleJsonSerializationContractResolver : Newtonsoft.Json.Serialization.DefaultContractResolver {
         public bool SerializeCollections { get; set; } = false;
         public bool SerializeReferences { get; set; } = true;
@@ -38,7 +38,7 @@ namespace BlazorServerSideApplication {
 }
 
 namespace Microsoft.Extensions.DependencyInjection {
-    using BlazorServerSideApplication;
+    using OpoTest;
 
     public static class SampleJsonMvcBuilderExtensions {
         public static IMvcBuilder AddDxSampleModelJsonOptions(this IMvcBuilder builder, Action<SampleJsonSerializationContractResolver> setupAction = null) {

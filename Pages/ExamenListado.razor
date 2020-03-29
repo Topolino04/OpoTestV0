@@ -2,94 +2,81 @@
 @attribute [Authorize]
 
 @inject ExamenService ExamenesService
-@inject TemaService TemasService
+@inject XpoService<Tema> TemasService
 @inject NavigationManager NavigationManager
 
 
 <h3>Examenes</h3>
-
-@if (examenes == null)
-{
-    <p><em>cargando...</em></p>
-}
-else
-{
-    <div class="row pb-4">
-        <div class="col">
-            <button type="button" class="btn btn-primary" @onclick="() => PopupVisible = true">Generar Examen</button>
-            <button type="button" class="btn btn-primary" disabled="@(ExamenSelected == null)" @onclick="RepetirExamen">Repetir Examen</button>
-            <button type="button" class="btn btn-primary" disabled="@(ExamenSelected == null)" @onclick="RelizarExamen">Realizar Examen</button>
-        </div>
+<div class="row pb-4">
+    <div class="col">
+        <button type="button" class="btn btn-primary" @onclick="() => PopupVisible = true">Generar Examen</button>
+        <button type="button" class="btn btn-primary" disabled="@(ExamenSelected == null)" @onclick="RepetirExamen">Repetir Examen</button>
+        <button type="button" class="btn btn-primary" disabled="@(ExamenSelected == null)" @onclick="RelizarExamen">Realizar Examen</button>
     </div>
-    <div class="row">
-        <div class="col">
-            <DxDataGrid Data=@examenes
-                        KeyFieldName="Oid"
-                        ShowGroupPanel=true
-                        PageSize="10"
-                        ShowFilterRow=true
-                        @bind-SingleSelectedDataRow="ExamenSelected">
-                <DxDataGridColumn>
-                    <DisplayTemplate>
-                        @if (context is Examen examen)
-                            {
-                            @string.Join(" ", examen.Temas.Select(x => x.Nombre));
-                            }
-                    </DisplayTemplate>
-                </DxDataGridColumn>
-                <DxDataGridDateEditColumn Field=@nameof(Examen.FechaInicio)></DxDataGridDateEditColumn>
-                <DxDataGridDateEditColumn Field=@nameof(Examen.FechaFin)></DxDataGridDateEditColumn>
-                <DxDataGridColumn>
-                    <DisplayTemplate>
-                        @if (context is Examen examen && examen.Preguntas.Any())
-                            {
-                                double success = examen.PreguntasCorrectas / (double)examen.TotalPreguntas * 100;
-                                double danger = examen.PreguntasIncorrectas / (double)examen.TotalPreguntas * 100;
-                            <div class="progress">
-                                <div class="progress-bar bg-success" role="progressbar" style="width: @success%"></div>
-                                <div class="progress-bar bg-danger" role="progressbar" style="width:  @danger%"></div>
-                            </div>
-                            }
-                        /**/
-                        /**/
-                    </DisplayTemplate>
-                </DxDataGridColumn>
-            </DxDataGrid>
-        </div>
+</div>
+<div class="row">
+    <div class="col">
+        <DxDataGrid DataAsync="token => ExamenesService.Get(token)"
+                    KeyFieldName="Oid"
+                    ShowGroupPanel=true
+                    PageSize="10"
+                    ShowFilterRow=true
+                    @bind-SingleSelectedDataRow="ExamenSelected">
+            <DxDataGridColumn>
+                <DisplayTemplate>
+                    @if (context is Examen examen)
+                    {
+                        @string.Join(" ", examen.Temas.Select(x => x.Nombre));
+                    }
+                </DisplayTemplate>
+            </DxDataGridColumn>
+            <DxDataGridDateEditColumn Field=@nameof(Examen.FechaInicio)></DxDataGridDateEditColumn>
+            <DxDataGridDateEditColumn Field=@nameof(Examen.FechaFin)></DxDataGridDateEditColumn>
+            <DxDataGridColumn>
+                <DisplayTemplate>
+                    @if (context is Examen examen && examen.Preguntas.Any())
+                    {
+                        double success = examen.PreguntasCorrectas / (double)examen.TotalPreguntas * 100;
+                        double danger = examen.PreguntasIncorrectas / (double)examen.TotalPreguntas * 100;
+                        <div class="progress">
+                            <div class="progress-bar bg-success" role="progressbar" style="width: @success%"></div>
+                            <div class="progress-bar bg-danger" role="progressbar" style="width:  @danger%"></div>
+                        </div>
+                    }
+                </DisplayTemplate>
+            </DxDataGridColumn>
+        </DxDataGrid>
     </div>
+</div>
 
 
-    @if (PopupVisible)
-    {
-        <DxPopup HeaderText="Generar nuevo Examen" CloseButtonClick="@(() => PopupVisible = false)">
-            <ChildContent>
-                <DxFormLayout>
-                    <DxFormLayoutItem Caption="Temas" ColSpanXs="12">
-                        <Template>
-                            <DxListBox Data="@temas"
-                                       TextFieldName="@nameof(Tema.Nombre)"
-                                       SelectionMode="ListBoxSelectionMode.Multiple"
-                                       ShowCheckboxes="true"
-                                       @bind-SelectedItems="@SelectedItems">
-                            </DxListBox>
-                        </Template>
-                    </DxFormLayoutItem>
-                    <DxFormLayoutItem Caption="Número de preguntas" ColSpanXs="12">
-                        <Template>
-                            <DxSpinEdit @bind-Value="@NumeroPreguntas"></DxSpinEdit>
-                        </Template>
-                    </DxFormLayoutItem>
-                    <DxFormLayoutItem ColSpanXs="12">
-                        <Template>
-                            <button type="button" class="btn btn-primary" @onclick="() => GenerarExamen()">Genrar</button>
-                            <button type="button" class="btn btn-secondary" @onclick="()=> PopupVisible=false">Cancelar</button>
-                        </Template>
-                    </DxFormLayoutItem>
-                </DxFormLayout>
-            </ChildContent>
-        </DxPopup>
-    }
-}
+<DxPopup HeaderText="Generar nuevo Examen" @bind-Visible="PopupVisible" HeaderCssClass="bg-primary text-white" ShowCloseButton="false">
+    <ChildContent>
+        <DxFormLayout>
+            <DxFormLayoutItem Caption="Temas" ColSpanXs="12">
+                <Template>
+                    <DxListBox DataAsync="token => TemasService.Get(token)"
+                               TextFieldName="@nameof(Tema.Nombre)"
+                               SelectionMode="ListBoxSelectionMode.Multiple"
+                               ShowCheckboxes="true"
+                               @bind-SelectedItems="@SelectedItems">
+                    </DxListBox>
+                </Template>
+            </DxFormLayoutItem>
+            <DxFormLayoutItem Caption="Número de preguntas" ColSpanXs="12">
+                <Template>
+                    <DxSpinEdit @bind-Value="@NumeroPreguntas"></DxSpinEdit>
+                </Template>
+            </DxFormLayoutItem>
+        </DxFormLayout>
+    </ChildContent>
+    <FooterTemplate>
+        <div class="modal-footer">
+            <DxButton Text="Cancelar" RenderStyleMode="ButtonRenderStyleMode.Text" Click="x => PopupVisible = false" />
+            <DxButton Text="Generar" Click="x => GenerarExamen()" />
+        </div>
+    </FooterTemplate>
+</DxPopup>
 @code {
 
     bool popupVisible = false;
@@ -103,7 +90,6 @@ else
         }
     }
 
-    public IQueryable<Examen> examenes;
     public Examen examenSelected;
     public Examen ExamenSelected
     {
@@ -115,33 +101,13 @@ else
         }
     }
 
-
-    public IQueryable<Tema> temas;
-
-    IEnumerable<Tema> selectedItems = new Tema[0];
-    IEnumerable<Tema> SelectedItems
-    {
-        get => selectedItems;
-        set
-        {
-            selectedItems = value;
-            InvokeAsync(StateHasChanged);
-        }
-    }
-
+    IEnumerable<Tema> SelectedItems { get; set; }
     int NumeroPreguntas = 80;
-
-    protected override async Task OnInitializedAsync()
-    {
-        examenes = await ExamenesService.Get();
-        temas = await TemasService.Get();
-    }
 
     private async void GenerarExamen()
     {
         PopupVisible = false;
         await ExamenesService.GenerarExamen(NumeroPreguntas, SelectedItems.Select(x => x.Oid).ToArray());
-        examenes = await ExamenesService.Get();
         StateHasChanged();
     }
 
@@ -153,7 +119,6 @@ else
     private async void RepetirExamen()
     {
         await ExamenesService.RepetirExamen(examenSelected.Oid);
-        examenes = await ExamenesService.Get();
         StateHasChanged();
     }
 }

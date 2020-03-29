@@ -48,7 +48,7 @@ else
                             }
                             else
                             {
-                                <a class="list-group-item list-group-item-action list-group-item-secondary">
+                                <a class="list-group-item list-group-item-action list-group-item-default">
                                     <div class="col-lg-6">
                                         <p class="mb-1">@respuesta.Texto</p>
                                     </div>
@@ -63,7 +63,7 @@ else
                         }
                         else
                         {
-                            <a class="list-group-item list-group-item-action @(respuesta.Seleccionada ?? false ?"list-group-item-primary":"list-group-item-secondary")" @onclick="() => respuesta.Seleccionada = !(respuesta.Seleccionada ?? false)">@respuesta.Texto</a>
+                            <a class="list-group-item list-group-item-action @(respuesta.Seleccionada ?? false ?"list-group-item-primary":"list-group-item-default")" @onclick="() => respuesta.Seleccionada = !(respuesta.Seleccionada ?? false)">@respuesta.Texto</a>
                         }
                     }
                 </div>
@@ -74,7 +74,7 @@ else
                     <div class="btn-group">
                         @foreach (var pregunta in examen.Preguntas.OrderBy(x => x.Oid))
                         {
-                            <button type="button" class="btn btn-@(pregunta.Estado.HasValue? (pregunta.Estado.Value ?"success":"danger"):"secondary")" @onclick="() => PreguntaActual = pregunta">@pregunta.Oid</button>
+                            <button type="button" class="btn btn-@(pregunta.Estado.HasValue? (pregunta.Estado.Value ?"success":"danger"):"default")" @onclick="() => PreguntaActual = pregunta">@pregunta.Oid</button>
                         }
                     </div>
                 </div>
@@ -105,7 +105,7 @@ else
     async void Resolver()
     {
         preguntaActual = await ExamenesService.ResolverPregunta(PreguntaActual.Oid, PreguntaActual.Respuestas.Where(x => x.Seleccionada ?? false).Select(x => x.Oid).ToArray());
-        examen = await ExamenesService.GetByKey(Oid);
+        StateHasChanged();
     }
 
     protected override async Task OnInitializedAsync()

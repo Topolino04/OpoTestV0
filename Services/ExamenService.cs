@@ -1,22 +1,20 @@
 ﻿using DevExpress.Xpo;
 using Newtonsoft.Json;
+using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
-using BlazorServerSideApplication;
-using System;
 
-namespace BlazorServerSideApplication.Services
+namespace OpoTest.Services
 {
-
-    public class ExamenService : BaseService<Examen>
+    public class ExamenService : XpoService<Examen>
     {
-        public ExamenService(IDataLayer dataLayer, UnitOfWork modificationUnitOfWork) : base(dataLayer, modificationUnitOfWork) { }
-
+        public ExamenService(IDataLayer dataLayer) : base(dataLayer) { }
 
         public async Task<Examen> GenerarExamen(int numperoPreguntas, params int[] keyTemas)
         {
-            using (UnitOfWork uow = CreateModificationUnitOfWork())
+            using (UnitOfWork uow = GetUnitOfWork())
             {
                 var temas = keyTemas.Select(x => uow.GetObjectByKey<Tema>(x)).ToList();
                 var result = new Examen(uow);
@@ -34,21 +32,20 @@ namespace BlazorServerSideApplication.Services
         }
         public async Task<Examen> RepetirExamen(int oid)
         {
-            using (UnitOfWork uow = CreateModificationUnitOfWork())
+            using (UnitOfWork uow = GetUnitOfWork())
             {
                 Examen old = uow.GetObjectByKey<Examen>(oid);
                 var result = new Examen(uow);
                 result.Temas.AddRange(old.Temas);
                 result.FechaInicio = DateTime.Now;
-                result.Preguntas.AddRange(old.Preguntas.Select(x=> x.Plantilla.GenerarExamenPregunta()));
+                result.Preguntas.AddRange(old.Preguntas.Select(x => x.Plantilla.GenerarExamenPregunta()));
                 await uow.CommitChangesAsync();
                 return await GetByKey(result.Oid);
             }
         }
-
         public async Task<ExamenPregunta> ResolverPregunta(int preguntaOid, params int[] repuestasSelecciondas)
         {
-            using (UnitOfWork uow = CreateModificationUnitOfWork())
+            using (UnitOfWork uow = GetUnitOfWork())
             {
                 var pregunta = uow.GetObjectByKey<ExamenPregunta>(preguntaOid);
 
@@ -58,5 +55,6 @@ namespace BlazorServerSideApplication.Services
                 return await uow.GetObjectByKeyAsync<ExamenPregunta>(preguntaOid);
             }
         }
+
     }
 }

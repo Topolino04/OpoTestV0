@@ -1,25 +1,42 @@
 ﻿@page "/loginControl"
 @using System.Web;
+@inject AuthenticationStateProvider AuthenticationStateProvider
 <AuthorizeView>
     <Authorized>
-        <b>Hello, @context.User.Identity.Name!</b>
-        <a class="ml-md-auto btn btn-primary"
-           href="/logout?returnUrl=/"
-           target="_top">Salir</a>
+        <div class="d-flex align-content-between">
+            <b class="p-2">Hola, @context.User.Identity.Name!</b>
+            <DxButton Text="Salir" Click="x => InvokeAsync(Logout)" />
+        </div>
     </Authorized>
     <NotAuthorized>
-        <DxTextBox @bind-Text="@Username" ClearButtonDisplayMode="@DataEditorClearButtonDisplayMode.Auto" NullText="Usuario..." />
-        <DxTextBox @bind-Text="@Password" ClearButtonDisplayMode="@DataEditorClearButtonDisplayMode.Auto" Password="true" NullText="Usuario..." />
-        <a class="ml-md-auto btn btn-primary"
-           href="/login?paramUsername=@encode(@Username)&paramPassword=@encode(@Password)"
-           target="_top">Iniciar</a>
+        <div class="d-flex align-content-between">
+                <input style="width:250px" class="form-control mr-2" type="text" placeholder="Usuario" @bind="@Username" />
+                <input style="width:250px" class="form-control mr-2" type="password" placeholder="Contraseña" @bind="@Password" />
+            <DxButton Text="Login" Click="x => InvokeAsync(Login)" />
+        </div>
     </NotAuthorized>
 </AuthorizeView>
 @code {
+    AutenticationService AutenticationService => AuthenticationStateProvider as AutenticationService;
+
     string Username = "";
     string Password = "";
     private string encode(string param)
     {
         return HttpUtility.UrlEncode(param);
     }
+
+    private async Task Login()
+    {
+        await AutenticationService.Autenticate(Username, Password);
+        Username = "";
+        Password = "";
+    }
+
+
+    private async Task Logout()
+    {
+        await AutenticationService.Exit();
+    }
+
 }

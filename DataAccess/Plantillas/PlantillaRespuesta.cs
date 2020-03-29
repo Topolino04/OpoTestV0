@@ -1,8 +1,9 @@
 ﻿using DevExpress.Xpo;
+using OpoTest.Services;
 
-namespace BlazorServerSideApplication
+namespace OpoTest
 {
-    public class PlantillaRespuesta : XPObject
+    public class PlantillaRespuesta : XPObject, IAggregated
     {
         public PlantillaRespuesta(Session session) : base(session) { }
 
@@ -35,6 +36,12 @@ namespace BlazorServerSideApplication
         {
             get => explicacion;
             set => SetPropertyValue(nameof(Explicacion), ref explicacion, value);
+        }
+
+        public void SetAgregation(object aggregatedObject)
+        {
+            if (aggregatedObject is PlantillaPregunta pregunta)
+                Pregunta = Session.GetObjectByKey<PlantillaPregunta>(pregunta.Oid);
         }
     }
 }

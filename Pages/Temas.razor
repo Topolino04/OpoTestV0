@@ -1,21 +1,19 @@
 ﻿@page "/Temas"
 @attribute [Authorize]
 
-@inject TemaService TemaService
+@inject XpoService<Tema> TemaService
 
 
 <h3>Temas</h3>
 
-<DxTreeView Data="@temas"
-            AllowSelectNodes="true"
-            TextExpression="@((x) => ((Tema)x).Nombre)"
-            ChildrenExpression="@((x) => ((Tema)x).Hijos)">
-</DxTreeView>
+<DxDataGrid DataAsync="token => TemaService.Get(token)"
+            RowInsertingAsync="x => TemaService.Add(x)"            
+            RowUpdatingAsync="(x,y)=> TemaService.Update(x.Oid,y)"
+            RowRemovingAsync="x => TemaService.Delete(x.Oid)"
+            >
+    <DxDataGridCommandColumn Width="100px"/>
+    <DxDataGridColumn Field="Nombre" />
+    <DxDataGridColumn Field="Explicacion" />
+    <DxDataGridComboBoxColumn Field="Padre.Oid" Caption="Padre" DataAsync="token => TemaService.Get(token)" TextFieldName="Nombre" ValueFieldName="Oid" />
+</DxDataGrid>
 
-@code {
-    IQueryable<Tema> temas;
-    protected override async Task OnInitializedAsync()
-    {
-        temas = await TemaService.Get();
-    }
-}

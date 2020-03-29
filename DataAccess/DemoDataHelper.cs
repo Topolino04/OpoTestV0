@@ -3,7 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace BlazorServerSideApplication
+namespace OpoTest
 {
     public static class DemoDataHelper
     {
@@ -46,8 +46,7 @@ namespace BlazorServerSideApplication
 
         public static void Seed(UnitOfWork uow)
         {
-            int ordersCnt = uow.Query<PlantillaRespuesta>().Count();
-            if (ordersCnt > 0) return;
+            if (uow.Query<PlantillaRespuesta>().Any()) return;
 
             var temas = new Tema[]
             {

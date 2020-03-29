@@ -1,6 +1,6 @@
 ﻿using DevExpress.Xpo;
 
-namespace BlazorServerSideApplication
+namespace OpoTest
 {
     public class Tema : XPObject
     {
