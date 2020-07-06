@@ -87,7 +87,7 @@
 
 <DxPopup @bind-Visible="PopupFormularioVisible" HeaderText="Pregunta" CssClass="modal-lg" CloseButtonClick="() => PopupFormularioVisible = false">
     <ChildContent>
-     <   <DxFormLayout>
+        <DxFormLayout>
             <DxFormLayoutItem Caption="Tema:" ColSpanMd="12">
                 <Template>
                     <DxComboBox @bind-SelectedItem=datos.Tema DataAsync="x => TemaService.Get(x)" TextFieldName="DisplayFormat" />
