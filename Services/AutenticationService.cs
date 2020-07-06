@@ -19,6 +19,10 @@ namespace OpoTest.Services
         }
         public override async Task<AuthenticationState> GetAuthenticationStateAsync()
         {
+#if DEBUG
+            ClaimsPrincipal user = new ClaimsPrincipal(new ClaimsIdentity(new[] { new Claim(ClaimTypes.Name, "Admin"), }, "simpleAutentication"));
+            return new AuthenticationState(user);
+#else
             try
             {
                 string username = await protectedSessionStorage.GetAsync<string>("CurrentUser");
@@ -29,6 +33,7 @@ namespace OpoTest.Services
             {
                 return new AuthenticationState(new ClaimsPrincipal());
             }
+#endif
         }
 
         public async Task Autenticate(string username, string password)

@@ -4,15 +4,17 @@
 @inject ExamenService ExamenesService
 @inject XpoService<Tema> TemasService
 @inject NavigationManager NavigationManager
-
+@inject IJSRuntime JSRuntime
+@inject IToastService toastService
 
 <h3>Examenes</h3>
 <div class="row pb-4">
-    <div class="col">
-        <button type="button" class="btn btn-primary" @onclick="() => PopupVisible = true">Generar Examen</button>
-        <button type="button" class="btn btn-primary" disabled="@(ExamenSelected == null)" @onclick="RepetirExamen">Repetir Examen</button>
-        <button type="button" class="btn btn-primary" disabled="@(ExamenSelected == null)" @onclick="RelizarExamen">Realizar Examen</button>
-    </div>
+    <DxToolbar>
+        <DxToolbarItem RenderStyle="ButtonRenderStyle.Primary" Text="Generar Examen" Click="x =>  PopupVisible = true" />
+        <DxToolbarItem Text="Repetir Examen" Click="x => RepetirExamen()" Enabled="ExamenSelected != null" />
+        <DxToolbarItem Text="Realizar Examen" Click="x => RelizarExamen()" Enabled="ExamenSelected != null" />
+        <DxToolbarItem Text="Borrar Examen" Click="x => BorrarExamen()" />
+    </DxToolbar>
 </div>
 <div class="row">
     <div class="col">
@@ -48,11 +50,14 @@
         </DxDataGrid>
     </div>
 </div>
-
-
 <DxPopup HeaderText="Generar nuevo Examen" @bind-Visible="PopupVisible" HeaderCssClass="bg-primary text-white" ShowCloseButton="false">
     <ChildContent>
         <DxFormLayout>
+            <DxFormLayoutItem Caption="Número de preguntas" ColSpanXs="12">
+                <Template>
+                    <DxSpinEdit @bind-Value="@NumeroPreguntas"></DxSpinEdit>
+                </Template>
+            </DxFormLayoutItem>
             <DxFormLayoutItem Caption="Temas" ColSpanXs="12">
                 <Template>
                     <DxListBox DataAsync="token => TemasService.Get(token)"
@@ -63,18 +68,11 @@
                     </DxListBox>
                 </Template>
             </DxFormLayoutItem>
-            <DxFormLayoutItem Caption="Número de preguntas" ColSpanXs="12">
-                <Template>
-                    <DxSpinEdit @bind-Value="@NumeroPreguntas"></DxSpinEdit>
-                </Template>
-            </DxFormLayoutItem>
         </DxFormLayout>
     </ChildContent>
     <FooterTemplate>
-        <div class="modal-footer">
-            <DxButton Text="Cancelar" RenderStyleMode="ButtonRenderStyleMode.Text" Click="x => PopupVisible = false" />
-            <DxButton Text="Generar" Click="x => GenerarExamen()" />
-        </div>
+        <DxButton Text="Cancelar" RenderStyleMode="ButtonRenderStyleMode.Text" Click="x => PopupVisible = false" />
+        <DxButton Text="Generar" Click="x => GenerarExamen()" />
     </FooterTemplate>
 </DxPopup>
 @code {
@@ -108,6 +106,7 @@
     {
         PopupVisible = false;
         await ExamenesService.GenerarExamen(NumeroPreguntas, SelectedItems.Select(x => x.Oid).ToArray());
+        toastService.ShowSuccess("Examen creado con éxito.", "OK");
         StateHasChanged();
     }
 
@@ -119,6 +118,17 @@
     private async void RepetirExamen()
     {
         await ExamenesService.RepetirExamen(examenSelected.Oid);
+        toastService.ShowSuccess("Examen copiado con éxito.", "OK");
         StateHasChanged();
+    }
+
+    private async void BorrarExamen()
+    {
+        if (await JSRuntime.InvokeAsync<bool>("confirm", "¿Seguro que quieres borrar el examen?"))
+        {
+            await ExamenesService.Delete(examenSelected.Oid);
+            toastService.ShowSuccess("Examen borrado con éxito.", "OK");
+            StateHasChanged();
+        }
     }
 }

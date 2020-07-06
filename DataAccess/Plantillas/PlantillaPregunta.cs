@@ -18,6 +18,7 @@ namespace OpoTest
         }
 
         private string enunciado;
+        [Size(1000)]
         public string Enunciado
         {
             get { return enunciado; }
@@ -25,6 +26,7 @@ namespace OpoTest
         }
 
         private string explicacion;
+        [Size(4000)]
         public string Explicacion
         {
             get { return explicacion; }

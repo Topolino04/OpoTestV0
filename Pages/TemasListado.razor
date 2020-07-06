@@ -1,0 +1,159 @@
+﻿@page "/Temas"
+@attribute [Authorize]
+
+@inject XpoService<Tema> TemaService
+@inject IToastService toastService
+@inject IJSRuntime JSRuntime
+@inject NavigationManager NavigationManager
+
+<h3>Temas</h3>
+
+
+    <div class="card">
+        <div class="card-header">
+            <DxToolbar>
+                <DxToolbarItem Text="Nuevo Tema" Click="x => Nuevo(true)" />
+                <DxToolbarItem Text="Nuevo Subtema" Click="X => Nuevo(false)" Enabled="TemaSeleccionado != null" />
+                <DxToolbarItem Text="Editar" Click="Editar" Enabled="TemaSeleccionado != null" />
+                <DxToolbarItem Text="Borrar" Click="x=> InvokeAsync(Borrar)" Enabled="TemaSeleccionado != null" />
+                <DxToolbarItem Text="Ver Preguntas" Click=@(x=> NavigationManager.NavigateTo($"/Preguntas/{TemaSeleccionado.Oid}")) Enabled="TemaSeleccionado != null" BeginGroup="true" />
+                <DxToolbarItem Text="Expandir Temas" Click="x=> TreeView.ExpandAll()" BeginGroup="true" />
+                <DxToolbarItem Text="Colapsar Temas" Click="x=> TreeView.CollapseAll()" />
+            </DxToolbar>
+        </div>
+        <div class="card-body">
+            @if (Temas != null)
+            {
+                <DxTreeView Data="Temas"
+                            @ref="TreeView"
+                            AllowSelectNodes="true"
+                            SelectionChanged="SelectionChanged"
+                            TextExpression=@(dataItem => ((Tema)dataItem).DisplayFormat)
+                            ChildrenExpression="@(dataItem => ((Tema)dataItem).Hijos)"
+                            HasChildrenExpression="@(dataItem => ((Tema)dataItem).Hijos.Any())">
+
+                    <NodeTextTemplate>
+                        <li class="w-100 d-flex justify-content-between align-items-center">
+                            @context.Text
+                            <span class="badge badge-secondary">@(((Tema)context.DataItem).Preguntas.Count())</span>
+                        </li>
+                    </NodeTextTemplate>
+                </DxTreeView>
+            }
+        </div>
+    </div>
+
+    <DxPopup HeaderText="Tema" CssClass="modal-lg" @bind-Visible="@PopupVisible">
+        <ChildContent>
+            <DxFormLayout>
+                <DxFormLayoutItem Caption="Número" ColSpanMd="3">
+                    <Template>
+                        <DxSpinEdit @bind-Value="NumeroTema" />
+                    </Template>
+                </DxFormLayoutItem>
+                <DxFormLayoutItem Caption="Nombre" ColSpanXs="12" ColSpanMd="9">
+                    <Template>
+                        <DxTextBox @bind-Text="NombreTema" />
+                    </Template>
+                </DxFormLayoutItem>
+            </DxFormLayout>
+        </ChildContent>
+        <FooterTemplate>
+            <div class="modal-footer">
+                <DxButton Text="Cancelar" RenderStyleMode="ButtonRenderStyleMode.Text" Click="Cancelar " />
+                <DxButton Text="Guardar" Click="x => InvokeAsync(Guardar)" />
+            </div>
+        </FooterTemplate>
+    </DxPopup>
+
+
+@code {
+
+    DxTreeView TreeView;
+
+    IQueryable<Tema> Temas;
+    Tema TemaSeleccionado;
+    string NombreTema;
+    int NumeroTema;
+
+
+    bool PopupVisible { get; set; } = false;
+
+
+    protected override async Task OnInitializedAsync()
+    {
+        Temas = (await TemaService.Get()).Where(x => x.Padre == null).AsQueryable();
+    }
+
+    protected override void OnAfterRender(bool firstRender)
+    {
+        base.OnAfterRender(firstRender);
+        if (firstRender) TreeView?.ExpandAll();
+    }
+
+    protected void SelectionChanged(TreeViewNodeEventArgs e)
+    {
+        TemaSeleccionado = e.NodeInfo.DataItem as Tema;
+        PopupVisible = false;
+        InvokeAsync(StateHasChanged);
+    }
+
+    void Nuevo(bool raiz)
+    {
+        nuevo = true;
+        NombreTema = null;
+        if (raiz) TemaSeleccionado = null;
+
+        //NumeroTema = TemaSeleccionado.Hijos.Max(x => x.Numero) + 1; ;
+        PopupVisible = true;
+        InvokeAsync(StateHasChanged);
+    }
+
+    void Editar(ToolbarItemClickEventArgs args)
+    {
+        nuevo = false;
+        NombreTema = TemaSeleccionado.Nombre;
+        NumeroTema = TemaSeleccionado.Numero;
+        PopupVisible = true;
+        InvokeAsync(StateHasChanged);
+    }
+
+    async Task Borrar()
+    {
+        if (await JSRuntime.InvokeAsync<bool>("confirm", "¿Seguro que quieres borrar el tema?"))
+        {
+            await TemaService.Delete(TemaSeleccionado.Oid);
+            toastService.ShowSuccess("Datos borrados con éxito.", "OK");
+            StateHasChanged();
+        }
+    }
+
+    bool nuevo;
+    async Task Guardar()
+    {
+        if (nuevo)
+            await TemaService.Add(new Dictionary<string, object>() {
+                { "Nombre", NombreTema },
+                { "Numero", NumeroTema},
+                { "Padre", TemaSeleccionado?.Oid }
+            });
+        else
+            await TemaService.Update(TemaSeleccionado.Oid, new Dictionary<string, object>() {
+                { "Numero", NumeroTema},
+                { "Nombre", NombreTema }
+            });
+
+        Temas = (await TemaService.Get()).Where(x => x.Padre == null).AsQueryable();
+        PopupVisible = false;
+        toastService.ShowSuccess("Registro guardado con éxito", "OK");
+        StateHasChanged();
+    }
+
+    void Cancelar(MouseEventArgs args)
+    {
+        PopupVisible = false;
+        InvokeAsync(StateHasChanged);
+    }
+}
+
+
