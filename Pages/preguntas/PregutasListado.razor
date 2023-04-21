@@ -1,0 +1,229 @@
+﻿
+@page "/Preguntas/{TemaOid:int}"
+@page "/Preguntas"
+
+@attribute [Authorize]
+@inject XpoService<PlantillaPregunta> PreguntaService
+@inject XpoService<PlantillaRespuesta> RespuestaService
+@inject XpoService<Tema> TemaService
+@inject NavigationManager NavigationManager
+@inject IJSRuntime JSRuntime
+@inject IToastService toastService
+
+<h3>@(Tema?.DisplayFormat ?? "Todos los temas")</h3>
+<DxDataGrid DataAsync="DataAsync" KeyFieldName="Oid" @ref="GridPreguntas"
+            SelectionMode="DataGridSelectionMode.None"
+            ShowFilterRow=true
+            ShowPager="true">
+    <HeaderTemplate>
+        <DxToolbar>
+            <DxToolbarItem GroupName="FiltroNuevas" IconCssClass=@((VerNuevas?"fas fa-check-square":"far fa-square")) Text="Solo nuevas" @bind-Checked="VerNuevas" />
+            <DxToolbarItem IconCssClass="fas fa-sync" Text="Refrescar" Click="_ => GridPreguntas.Refresh()" />
+
+            <DxToolbarItem CssClass="p-2" Alignment="ToolbarItemAlignment.Right" IconCssClass="fas fa-lg fa-plus" Text="Nueva pregunta" Click="x => InvokeAsync(() => AbrirFormulario())" BeginGroup="true" />
+            <DxToolbarItem CssClass="p-2" Alignment="ToolbarItemAlignment.Right" IconCssClass="fas fa-lg fa-file-import" Text="Importar Preguntas" Click="x => { importador.IniciarImportacion(); GridPreguntas.Refresh(); }" />
+        </DxToolbar>
+    </HeaderTemplate>
+    <Columns>
+        <DxDataGridColumn Field="Oid" SortIndex="0" SortOrder="DataGridColumnSortOrder.Descending" Visible="false" />
+        <DxDataGridColumn Field="Enunciado">
+            <DisplayTemplate>
+                @if (context is PlantillaPregunta pregunta)
+                {
+                    <div class="card">
+                        <div class="card-body d-flex">
+                            <div class="align-self-start">
+                                <span class="badge badge-primary align-self-start" style="font-size:1.5rem">@pregunta.Oid</span>
+                            </div>
+                            <div class="flex-grow-1">
+                                <h5 class="mx-2 card-title font-weight-bold">@pregunta.Enunciado</h5>
+                            </div>
+                            <div class="align-self-start" style="min-width:85px">
+                                <DxToolbar CssClass="align-self-start" AdaptivityAutoHideRootItems="false">
+                                    <DxToolbarItem IconCssClass="fa fa-lg fa-pencil-alt" Click="x =>InvokeAsync(() =>  AbrirFormulario(pregunta))" />
+                                    <DxToolbarItem IconCssClass="fa fa-lg fa-trash" Click="x => InvokeAsync(() => BorrarPregunta(pregunta))" />
+                                    <DxToolbarItem IconCssClass="fas fa-lg fa-question" Visible="!string.IsNullOrEmpty(pregunta.Explicacion)" Click="x => InvokeAsync(() => popUpInfo.MostrarAyuda(pregunta.Enunciado, pregunta.Explicacion))" />
+                                </DxToolbar>
+                            </div>
+                        </div>
+                        <ul class="list-group list-group-flush">
+                            @foreach (PlantillaRespuesta respuesta in pregunta.Respuestas)
+                            {
+                                <li class="list-group-item d-flex justify-content-between @(respuesta.Correcta ? "list-group-item-primary" : "")">
+                                    <span>@respuesta.Texto</span>
+                                    <DxToolbar CssClass="align-self-start" AdaptivityAutoHideRootItems="false">
+                                        <DxToolbarItem Visible="!string.IsNullOrEmpty(respuesta.Explicacion)" IconCssClass="fas fa-question" Click="x => InvokeAsync(() => popUpInfo.MostrarAyuda(respuesta.Texto, respuesta.Explicacion))" />
+                                    </DxToolbar>
+                                </li>
+                            }
+                        </ul>
+                    </div>
+                }
+            </DisplayTemplate>
+        </DxDataGridColumn>
+    </Columns>
+</DxDataGrid>
+
+<PopupInfo @ref="popUpInfo" />
+
+<DxPopup @bind-Visible="PopupFormularioVisible" HeaderText="Pregunta" CssClass="modal-lg" CloseButtonClick="() => PopupFormularioVisible = false">
+    <ChildContent>
+        <PreguntaFormV2 @ref="Form" OID="ID" />
+    </ChildContent>
+    <FooterTemplate>
+        <div class="text-right">
+            <DxButton Text="Cancelar" RenderStyleMode="ButtonRenderStyleMode.Text" Click="x => PopupFormularioVisible = false" />
+            <DxButton Text="Guardar" Click="x => InvokeAsync(Guardar)" />
+        </div>
+    </FooterTemplate>
+</DxPopup>
+
+
+<PreguntasImportador @ref="importador" Tema="Tema" />
+
+@code {
+    PopupInfo popUpInfo;
+    PreguntasImportador importador;
+
+    PreguntaFormV2 Form;
+
+    bool popupFormularioVisible;
+    bool PopupFormularioVisible
+    {
+        get => popupFormularioVisible;
+        set
+        {
+            if (popupFormularioVisible == value) return;
+            popupFormularioVisible = value;
+            InvokeAsync(StateHasChanged);
+        }
+    }
+
+    bool popupTemasVisible;
+    bool PopupTemasVisible
+    {
+        get => popupTemasVisible;
+        set
+        {
+            if (popupTemasVisible == value) return;
+            popupTemasVisible = value;
+            InvokeAsync(StateHasChanged);
+        }
+    }
+
+    DxDataGrid<PlantillaPregunta> GridPreguntas;
+    [Parameter]
+    public int TemaOid { get; set; }
+    public Tema Tema { get; set; }
+
+    string filtro;
+    string Filtro
+    {
+        get => filtro;
+        set
+        {
+            if (filtro == value) return;
+            filtro = value;
+            GridPreguntas.Refresh();
+            InvokeAsync(StateHasChanged);
+        }
+    }
+
+    bool verNuevas;
+    bool VerNuevas
+    {
+        get => verNuevas;
+        set
+        {
+            if (verNuevas == value) return;
+            verNuevas = value;
+            GridPreguntas.Refresh();
+        }
+    }
+
+
+    protected override async Task OnInitializedAsync()
+    {
+        Tema = await TemaService.GetByKey(TemaOid);
+    }
+
+    async Task<IEnumerable<PlantillaPregunta>> DataAsync(System.Threading.CancellationToken token)
+    {
+        try
+        {
+            var query = await PreguntaService.Get();
+            if (TemaOid != 0)
+            {
+                var t = await TemaService.GetByKey(TemaOid);
+                List<int> temas = new List<int> { TemaOid };
+                temas.AddRange(t.AllTemas.Select(x => x.Oid));
+                query = query.Where(x => temas.Contains(x.Tema.Oid));
+            }
+            if (!string.IsNullOrWhiteSpace(Filtro))
+            {
+                query = query.Where(x =>
+                    (x.Enunciado?.Contains(Filtro, StringComparison.OrdinalIgnoreCase) ?? false) ||
+                    (x.Explicacion?.Contains(Filtro, StringComparison.OrdinalIgnoreCase) ?? false) ||
+                    x.Respuestas.Any(y => (y.Texto?.Contains(Filtro, StringComparison.OrdinalIgnoreCase) ?? false) || (y.Explicacion?.Contains(Filtro, StringComparison.OrdinalIgnoreCase) ?? false))
+                );
+            }
+            if (VerNuevas)
+                query = query.Where(x => x.Respuestas.All(y => !y.Correcta) || x.Tema == null);
+
+            return query;
+        }
+        catch (Exception ex)
+        {
+            toastService.ShowError(ex.Message, "Error");
+            throw;
+        }
+    }
+
+    int? ID { get; set; }
+
+    void AbrirFormulario(PlantillaPregunta pregunta = null)
+    {
+
+        ID = (pregunta?.Oid);
+        PopupFormularioVisible = true;
+    }
+
+    async Task Guardar()
+    {
+        await Form.Guardar();
+        PopupFormularioVisible = false;
+        await GridPreguntas.Refresh();
+    }
+
+    Task OnInitNewRow(int preguntaOid, Dictionary<string, object> values)
+    {
+        values.Add("Pregunta", preguntaOid);
+        return Task.CompletedTask;
+    }
+
+    async Task BorrarPregunta(PlantillaPregunta pregunta)
+    {
+        try
+        {
+            if (await JSRuntime.InvokeAsync<bool>("confirm", $"¿Seguro que quieres borrar la pregunta {pregunta.Oid}?"))
+            {
+                await PreguntaService.Delete(pregunta.Oid);
+                toastService.ShowSuccess("Datos borrados con éxito.", "OK");
+                await GridPreguntas.Refresh();
+                StateHasChanged();
+            }
+        }
+        catch (Exception ex)
+        {
+            toastService.ShowError(ex.Message, "ERROR");
+        }
+    }
+
+    public class Datos
+    {
+        public int? Oid { get; set; }
+        public string Enunciado { get; set; }
+        public string Explicacion { get; set; }
+        public Tema Tema { get; set; }
+    }
+}

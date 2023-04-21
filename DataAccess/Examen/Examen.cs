@@ -13,7 +13,7 @@ namespace OpoTest
         protected override void OnSaving()
         {
             base.OnSaving();
-            if (!FechaFin.HasValue && Preguntas.All(x => x.Estado.HasValue))
+            if (!FechaFin.HasValue && !IsDeleted && Preguntas.All(x => x.Estado.HasValue))
                 FechaFin = DateTime.Now;
         }
 
@@ -36,7 +36,8 @@ namespace OpoTest
 
         public int PreguntasCorrectas => Preguntas.Count(x => x.Estado ?? false);
         public int PreguntasIncorrectas => Preguntas.Count(x => !x.Estado ?? false);
-        public int PreguntasPendientes => Preguntas.Count(x => !x.Estado ?? false);
+        public int PregntasRespondidas => Preguntas.Count(x => x.Estado.HasValue);
+        public int PreguntasPendientes => Preguntas.Count(x => !x.Estado.HasValue);
         public int TotalPreguntas => Preguntas.Count;
 
         [Association]

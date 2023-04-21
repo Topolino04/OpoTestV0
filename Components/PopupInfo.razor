@@ -1,0 +1,19 @@
+﻿<DxPopup @bind-Visible="Visible" HeaderText="@Titulo" CssClass="modal-lg" CloseButtonClick="() => Visible = false">
+    <ChildContent>
+        @(new MarkupString(Contenido))
+    </ChildContent>
+</DxPopup>
+
+@code {
+    public bool Visible { get; set; }
+    public string Titulo { get; set; }
+    public string Contenido { get; set; }
+
+    public void MostrarAyuda(string titulo, string contenido)
+    {
+        Titulo = titulo;
+        Contenido = contenido;
+        Visible = true;
+        InvokeAsync(StateHasChanged);
+    }
+}

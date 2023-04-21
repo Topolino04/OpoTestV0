@@ -1,0 +1,127 @@
+﻿@page "/Examenes/{Oid:int}"
+
+@inject ExamenService ExamenesService
+
+
+
+<h3>Examenes</h3>
+
+@if (examen == null)
+{
+    <p><em>cargando...</em></p>
+}
+else
+{
+    if (PreguntaActual != null)
+    {
+        <div class="card">
+            <div class="card-header">
+                <div class="d-flex justify-content-between">
+
+                    <div class="d-flex">
+                        <DxCheckBox @bind-Checked="AutoResolver">Autoresolver</DxCheckBox>
+                        <DxButton Text="Resolver pregunta" Visible="!PreguntaActual.Estado.HasValue" Enabled="PreguntaActual.Respuestas.Any(x => x.Seleccionada ?? false)" Click="_ => Resolver()" />
+                        <DxButton Text="@(PreguntaActual?.Estado ?? false ?"Correcta":"Incorrecta")" RenderStyle="PreguntaActual?.Estado ?? false ? ButtonRenderStyle.Success: ButtonRenderStyle.Danger" Visible="PreguntaActual.Estado.HasValue" Enabled="false" />
+                    </div>
+
+                    <div class="d-flex align-self-center">
+                        <span class="mr-1 badge badge-success"> Correctas: @examen.PreguntasCorrectas</span>
+                        <span class="mr-1 badge badge-danger"> Incorrectas: @examen.PreguntasIncorrectas</span>
+                        <span class="mr-1 badge badge-primary"> Restantes: @examen.PreguntasPendientes</span>
+                        <span class="badge badge-secondary"> Total: @examen.TotalPreguntas</span>
+                    </div>
+                    <DxPager PageCount="@examen.Preguntas.Count" @bind-ActivePageIndex="Index" />
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="card-title d-flex align-content-between">
+                    <h5 class="flex-fill"> @PreguntaActual.Enunciado </h5>
+                    <DxButton Visible="PreguntaActual.Estado.HasValue && !string.IsNullOrEmpty(PreguntaActual.Explicacion)" IconCssClass="fas fa-question" Click="_ => popUpInfo.MostrarAyuda(PreguntaActual.Enunciado, PreguntaActual.Explicacion)" />
+                </div>
+
+                <div class="list-group">
+                    @foreach (var respuesta in PreguntaActual.Respuestas.OrderBy(x => x.Oid))
+                    {
+                        if (PreguntaActual.Estado.HasValue)
+                        {
+                            string status = respuesta.Correcta ? "success" : respuesta.Seleccionada ?? false ? "danger" : "default";
+                            <a class="d-flex list-group-item list-group-item-action list-group-item-@status">
+                                <p class="mb-1 flex-fill">@respuesta.Texto</p>
+                                <DxButton IconCssClass="fas fa-question" Visible="!string.IsNullOrEmpty(respuesta.Explicacion)" Click="_ => popUpInfo.MostrarAyuda(respuesta.Texto, respuesta.Explicacion)" />
+                            </a>
+                        }
+                        else
+                        {
+                            <a class="list-group-item list-group-item-action @(respuesta.Seleccionada ?? false ? "list-group-item-primary" : "list-group-item-default")"
+                               @onclick="() => {
+                                             respuesta.Seleccionada = !(respuesta.Seleccionada ?? false);
+                                             if (AutoResolver) Resolver();
+                                         }">@respuesta.Texto</a>
+                                    }
+                                }
+                </div>
+            </div>
+            <div class="card-footer">
+                <div class="d-flex flex-wrap">
+                    @for (int i = 0; i < examen.Preguntas.Count; i++)
+                    {
+                        var aux = examen.Preguntas.OrderBy(x => x.Oid).Skip(i).FirstOrDefault();
+                        <DxButton @key="aux" CssClass="ml-1 mb-1"
+                                  Text=@((i+1).ToString())
+                                  Click="_=> PreguntaActual = aux"
+                                  RenderStyle="aux.Estado.HasValue ? (aux.Estado.Value ? ButtonRenderStyle.Success : ButtonRenderStyle.Danger) : PreguntaActual == aux ? ButtonRenderStyle.Primary: ButtonRenderStyle.Secondary" />
+                    }
+                </div>
+            </div>
+        </div>
+    }
+    else
+    {
+        <p><em>cargando...</em></p>
+    }
+}
+
+<PopupInfo @ref="popUpInfo" />
+
+@code {
+    PopupInfo popUpInfo;
+    bool AutoResolver = true;
+
+    [Parameter] public int Oid { get; set; }
+    int index;
+    public int Index
+    {
+        get => index;
+        set
+        {
+            index = value;
+            PreguntaActual = examen.Preguntas.OrderBy(x => x.Oid).Skip(index).FirstOrDefault();
+            InvokeAsync(StateHasChanged);
+        }
+    }
+
+    Examen examen;
+    ExamenPregunta preguntaActual;
+    ExamenPregunta PreguntaActual
+    {
+        get => preguntaActual;
+        set
+        {
+            preguntaActual = value;
+            InvokeAsync(StateHasChanged);
+        }
+    }
+
+    async void Resolver()
+    {
+        PreguntaActual = await ExamenesService.ResolverPregunta(PreguntaActual.Oid, PreguntaActual.Respuestas.Where(x => x.Seleccionada ?? false).Select(x => x.Oid).ToArray());
+        StateHasChanged();
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        examen = await ExamenesService.GetByKey(Oid);
+        PreguntaActual = examen.Preguntas.OrderBy(x => x.Oid).FirstOrDefault(x => !x.Estado.HasValue);
+        Index = examen.Preguntas.OrderBy(x => x.Oid).ToList().IndexOf(PreguntaActual);
+    }
+}

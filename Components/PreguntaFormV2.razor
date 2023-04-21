@@ -1,0 +1,171 @@
+﻿@attribute [Authorize]
+@inject XpoService<PlantillaPregunta> PreguntaService
+@inject XpoService<PlantillaRespuesta> RespuestaService
+@inject XpoService<Tema> TemaService
+@inject NavigationManager NavigationManager
+@inject IJSRuntime JSRuntime
+@inject IToastService toastService
+
+
+@if (pregunta != null)
+{
+    <EditForm Model="pregunta" Context="EditContext">
+        <DxFormLayout>
+            <DxFormLayoutTabPages>
+                <DxFormLayoutTabPage Caption="Pregunta">
+                    <DxFormLayoutItem Caption="Tema:" ColSpanMd="12">
+                        <Template>
+                            <DxComboBox @bind-Value=pregunta.Tema DataAsync="x => TemaService.Get(x)" TextFieldName="DisplayFormat" />
+                        </Template>
+                    </DxFormLayoutItem>
+                    <DxFormLayoutItem Caption="Enunciado:" ColSpanMd="12" Field="Enunciado">
+                        <Template>
+                            <InputTextArea class="form-control form-control-sm" @bind-Value="pregunta.Enunciado" rows="5" />
+                        </Template>
+                    </DxFormLayoutItem>
+                </DxFormLayoutTabPage>
+                <DxFormLayoutTabPage Caption="Respuestas">
+                    <DxFormLayoutItem ColSpanMd="12">
+                        <Template Context="tmp">
+                            <ul class="list-group">
+                                <li class="list-group-item">
+                                    <DxButton CssClass="btn-block" RenderStyleMode="ButtonRenderStyleMode.Outline" IconCssClass="fa fa-plus" Click="_ =>  pregunta.Opcions.Add(new Opcion())" />
+                                </li>
+                                @foreach (var opt in pregunta.Opcions.Where(x => !x.Borrado))
+                                {
+                                    <li class="list-group-item">
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <DxCheckBox @bind-Checked="opt.Correcto" />
+                                            <DxTextBox CssClass="mx-3 w-100" @bind-Text=opt.Enunciado />
+                                            <DxButton IconCssClass="fa fa-trash" Click="_ => opt.Borrado = true" />
+                                        </div>
+                                        <DxMemo CssClass="mt-1 w-100" @bind-Text="opt.Explicacion" Rows="1" />
+                                    </li>
+                                }
+                            </ul>
+                        </Template>
+                    </DxFormLayoutItem>
+                </DxFormLayoutTabPage>
+                <DxFormLayoutTabPage Caption="Explicación">
+                    <DxFormLayoutItem ColSpanMd="12">
+                        <Template>
+                            <InputRichText @bind-Value="pregunta.Explicacion" />
+                        </Template>
+                    </DxFormLayoutItem>
+                </DxFormLayoutTabPage>
+            </DxFormLayoutTabPages>
+        </DxFormLayout>
+    </EditForm>
+}
+else
+{
+    <div class="text-center d-flex flex-column">
+        <i class="fas fa-5x fa-pulse fa-spinner text-primary"></i><span>Cargando...</span>
+    </div>
+}
+
+@code {
+    DxDataGrid<Opcion> gridView;
+
+    protected override async Task OnInitializedAsync()
+    {
+        PlantillaPregunta aux = OID.HasValue ? await PreguntaService.GetByKey(OID) : null;
+        pregunta = new Pregunta
+        {
+            Oid = aux?.Oid,
+            Enunciado = aux?.Enunciado,
+            Explicacion = aux?.Explicacion,
+            Tema = aux?.Tema,
+            Opcions = aux?.Respuestas.Select(x => new Opcion
+            {
+                Oid = x.Oid,
+                Correcto = x.Correcta,
+                Enunciado = x.Texto,
+                Explicacion = x.Explicacion
+            }).ToList() ??
+            new List<Opcion>() { new Opcion(), new Opcion(), new Opcion(), new Opcion(), }
+        };
+        StateHasChanged();
+    }
+    [Parameter]
+    public int? OID { get; set; }
+
+    Pregunta pregunta { get; set; }
+
+    public async Task Guardar()
+    {
+        try
+        {
+            if (pregunta.Oid.HasValue)
+            {
+                await PreguntaService.Update(pregunta.Oid.Value, new Dictionary<string, object>
+{
+                    {"Enunciado", pregunta.Enunciado },
+                    {"Explicacion", pregunta?.Explicacion},
+                    {"Tema", pregunta.Tema.Oid}
+                });
+            }
+            else
+            {
+                var aux = await PreguntaService.Add(new Dictionary<string, object>
+{
+                    {"Enunciado", pregunta?.Enunciado},
+                    {"Explicacion", pregunta?.Explicacion},
+                    {"Tema", pregunta.Tema.Oid}
+                });
+                pregunta.Oid = aux.Oid;
+            }
+            foreach (var opcion in pregunta.Opcions.Where(x => x.Borrado && x.Oid.HasValue))
+            {
+                await RespuestaService.Delete(opcion.Oid.Value);
+            }
+            foreach (var opcion in pregunta.Opcions.Where(x => !x.Borrado))
+            {
+                if (opcion.Oid.HasValue)
+                {
+                    await RespuestaService.Update(opcion.Oid.Value, new Dictionary<string, object>
+{
+                        {"Correcta",opcion?.Correcto } ,
+                        {"Texto",opcion?.Enunciado} ,
+                        {"Explicacion",opcion?.Explicacion} ,
+                    });
+                }
+                else
+                {
+                    await RespuestaService.Add(new Dictionary<string, object>
+{
+                        {"Correcta",opcion?.Correcto } ,
+                        {"Texto",opcion?.Enunciado} ,
+                        {"Explicacion",opcion?.Explicacion} ,
+                        {"Pregunta",pregunta.Oid}
+                    });
+                }
+            }
+
+            toastService.ShowSuccess("Datos guardados con éxito.", "OK");
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            toastService.ShowError(ex.Message, "ERROR");
+        }
+    }
+
+    public class Pregunta
+    {
+        public int? Oid { get; set; }
+        public string Enunciado { get; set; }
+        public string Explicacion { get; set; }
+        public Tema Tema { get; set; }
+        public List<Opcion> Opcions { get; set; } = new List<Opcion>();
+    }
+
+    public class Opcion
+    {
+        public int? Oid { get; set; }
+        public bool Correcto { get; set; }
+        public string Enunciado { get; set; }
+        public string Explicacion { get; set; }
+        public bool Borrado { get; set; }
+    }
+}

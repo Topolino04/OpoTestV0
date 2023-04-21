@@ -9,62 +9,65 @@
 <h3>Temas</h3>
 
 
-    <div class="card">
-        <div class="card-header">
-            <DxToolbar>
-                <DxToolbarItem Text="Nuevo Tema" Click="x => Nuevo(true)" />
-                <DxToolbarItem Text="Nuevo Subtema" Click="X => Nuevo(false)" Enabled="TemaSeleccionado != null" />
-                <DxToolbarItem Text="Editar" Click="Editar" Enabled="TemaSeleccionado != null" />
-                <DxToolbarItem Text="Borrar" Click="x=> InvokeAsync(Borrar)" Enabled="TemaSeleccionado != null" />
-                <DxToolbarItem Text="Ver Preguntas" Click=@(x=> NavigationManager.NavigateTo($"/Preguntas/{TemaSeleccionado.Oid}")) Enabled="TemaSeleccionado != null" BeginGroup="true" />
-                <DxToolbarItem Text="Expandir Temas" Click="x=> TreeView.ExpandAll()" BeginGroup="true" />
-                <DxToolbarItem Text="Colapsar Temas" Click="x=> TreeView.CollapseAll()" />
-            </DxToolbar>
-        </div>
-        <div class="card-body">
-            @if (Temas != null)
-            {
-                <DxTreeView Data="Temas"
-                            @ref="TreeView"
-                            AllowSelectNodes="true"
-                            SelectionChanged="SelectionChanged"
-                            TextExpression=@(dataItem => ((Tema)dataItem).DisplayFormat)
-                            ChildrenExpression="@(dataItem => ((Tema)dataItem).Hijos)"
-                            HasChildrenExpression="@(dataItem => ((Tema)dataItem).Hijos.Any())">
-
-                    <NodeTextTemplate>
-                        <li class="w-100 d-flex justify-content-between align-items-center">
-                            @context.Text
-                            <span class="badge badge-secondary">@(((Tema)context.DataItem).Preguntas.Count())</span>
-                        </li>
-                    </NodeTextTemplate>
-                </DxTreeView>
-            }
-        </div>
+<div class="card">
+    <div class="card-header">
+        <DxToolbar>
+            <DxToolbarItem Text="Nuevo Tema" Click="x => Nuevo(true)" />
+            <DxToolbarItem Text="Nuevo Subtema" Click="X => Nuevo(false)" Enabled="TemaSeleccionado != null" />
+            <DxToolbarItem Text="Editar" Click="Editar" Enabled="TemaSeleccionado != null" />
+            <DxToolbarItem Text="Borrar" Click="x=> InvokeAsync(Borrar)" Enabled="TemaSeleccionado != null" />
+            <DxToolbarItem Text="Ver Preguntas" Click=@(x=> NavigationManager.NavigateTo($"/Preguntas/{TemaSeleccionado.Oid}")) Enabled="TemaSeleccionado != null" BeginGroup="true" />
+            <DxToolbarItem Text="Expandir Temas" Click="x=> TreeView.ExpandAll()" BeginGroup="true" />
+            <DxToolbarItem Text="Colapsar Temas" Click="x=> TreeView.CollapseAll()" />
+        </DxToolbar>
     </div>
+    <div class="card-body">
+        @if (Temas != null)
+        {
+            <DxTreeView Data="Temas"
+                        @ref="TreeView"
+                        AllowSelectNodes="true"
+                        SelectionChanged="SelectionChanged"
+                        TextExpression=@(dataItem => ((Tema)dataItem).DisplayFormat)
+                        ChildrenExpression="@(dataItem => ((Tema)dataItem).Hijos)"
+                        HasChildrenExpression="@(dataItem => ((Tema)dataItem).Hijos.Any())">
 
-    <DxPopup HeaderText="Tema" CssClass="modal-lg" @bind-Visible="@PopupVisible">
-        <ChildContent>
-            <DxFormLayout>
-                <DxFormLayoutItem Caption="Número" ColSpanMd="3">
-                    <Template>
-                        <DxSpinEdit @bind-Value="NumeroTema" />
-                    </Template>
-                </DxFormLayoutItem>
-                <DxFormLayoutItem Caption="Nombre" ColSpanXs="12" ColSpanMd="9">
-                    <Template>
-                        <DxTextBox @bind-Text="NombreTema" />
-                    </Template>
-                </DxFormLayoutItem>
-            </DxFormLayout>
-        </ChildContent>
-        <FooterTemplate>
-            <div class="modal-footer">
-                <DxButton Text="Cancelar" RenderStyleMode="ButtonRenderStyleMode.Text" Click="Cancelar " />
-                <DxButton Text="Guardar" Click="x => InvokeAsync(Guardar)" />
-            </div>
-        </FooterTemplate>
-    </DxPopup>
+                <NodeTextTemplate>
+                    <li class="w-100 d-flex justify-content-between align-items-center">
+                        @context.Text
+                        @if (((Tema)context.DataItem).Preguntas.Any())
+                        {
+                            <span class="badge badge-secondary">@(((Tema)context.DataItem).Preguntas.Count()) preguntas</span>
+                        }
+                    </li>
+                </NodeTextTemplate>
+            </DxTreeView>
+        }
+    </div>
+</div>
+
+<DxPopup HeaderText="Tema" CssClass="modal-lg" @bind-Visible="@PopupVisible">
+    <ChildContent>
+        <DxFormLayout>
+            <DxFormLayoutItem Caption="Número" ColSpanMd="3">
+                <Template>
+                    <DxSpinEdit @bind-Value="NumeroTema" />
+                </Template>
+            </DxFormLayoutItem>
+            <DxFormLayoutItem Caption="Nombre" ColSpanXs="12" ColSpanMd="9">
+                <Template>
+                    <DxTextBox @bind-Text="NombreTema" />
+                </Template>
+            </DxFormLayoutItem>
+        </DxFormLayout>
+    </ChildContent>
+    <FooterTemplate>
+        <div class="modal-footer">
+            <DxButton Text="Cancelar" RenderStyleMode="ButtonRenderStyleMode.Text" Click="Cancelar " />
+            <DxButton Text="Guardar" Click="x => InvokeAsync(Guardar)" />
+        </div>
+    </FooterTemplate>
+</DxPopup>
 
 
 @code {
@@ -82,13 +85,13 @@
 
     protected override async Task OnInitializedAsync()
     {
-        Temas = (await TemaService.Get()).Where(x => x.Padre == null).AsQueryable();
+        Temas = (await TemaService.Get()).Where(x => x.Padre == null).OrderBy(x => x.Arbol).AsQueryable();
     }
 
     protected override void OnAfterRender(bool firstRender)
     {
         base.OnAfterRender(firstRender);
-        if (firstRender) TreeView?.ExpandAll();
+        //if (firstRender) TreeView?.ExpandAll();
     }
 
     protected void SelectionChanged(TreeViewNodeEventArgs e)

@@ -5,29 +5,15 @@
     </button>
 </div>
 
-<div class="text-white @NavMenuCssClass" @onclick="ToggleNavMenu">
-    <ul class="nav flex-column">
-        <li class="nav-item px-3">
-            <NavLink class="nav-link text-white" href="" Match="NavLinkMatch.All">
-                <span class="oi oi-home" aria-hidden="true"></span> Home
-            </NavLink>
-        </li>
-        <li class="nav-item px-3">
-            <NavLink class="nav-link text-white" href="Examenes">
-                <span class="oi oi-plus" aria-hidden="true"></span> Examenes
-            </NavLink>
-        </li>
-        <li class="nav-item px-3">
-            <NavLink class="nav-link text-white" href="Preguntas">
-                <span class="oi oi-list-rich" aria-hidden="true"></span> Preguntas
-            </NavLink>
-        </li>
-        <li class="nav-item px-3">
-            <NavLink class="nav-link text-white" href="Temas">
-                <span class="oi oi-tags" aria-hidden="true"></span> Temas
-            </NavLink>
-        </li>
-    </ul>
+<div class="@NavMenuCssClass" @onclick="ToggleNavMenu">
+    <DxTreeView AllowSelectNodes="true" CssClass="py-3">
+        <Nodes>
+            <DxTreeViewNode Text="Home" IconCssClass="fas fa-2x fa-home" NavigateUrl="" />
+            <DxTreeViewNode Text="Examenes" IconCssClass="fas fa-2x fa-list-ol" NavigateUrl="Examenes" />
+            <DxTreeViewNode Text="Preguntas" IconCssClass="fas fa-2x fa-question" NavigateUrl="Preguntas" />
+            <DxTreeViewNode Text="Temas" IconCssClass="fas fa-2x fa-tags" NavigateUrl="Temas" />
+        </Nodes>
+    </DxTreeView>
 </div>
 
 @functions {

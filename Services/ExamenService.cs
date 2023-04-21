@@ -1,6 +1,7 @@
 ﻿using DevExpress.Xpo;
 using Newtonsoft.Json;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
@@ -12,7 +13,32 @@ namespace OpoTest.Services
     {
         public ExamenService(IDataLayer dataLayer) : base(dataLayer) { }
 
-        public async Task<Examen> GenerarExamen(int numperoPreguntas, params int[] keyTemas)
+        public async Task<Examen> GenerarExamenFallos(int numeroPreguntas)
+        {
+            using (UnitOfWork uow = GetUnitOfWork())
+            {
+                var claves = uow.Query<ExamenRespuesta>()
+                       .Where(x => x.Seleccionada.HasValue && x.Seleccionada != x.Correcta)
+                       .Select(x => x.Pregunta.Oid)
+                       .Distinct()
+                       .ToList();
+                claves.Shuffle();
+
+                var preguntas = uow.GetObjectsByKey(
+                    uow.GetClassInfo<PlantillaPregunta>(),
+                    claves.Take(numeroPreguntas).ToList(), true)
+                    .OfType<PlantillaPregunta>();
+
+                var result = new Examen(uow);
+                result.FechaInicio = DateTime.Now;
+                result.Preguntas.AddRange(preguntas.Select(x => x.GenerarExamenPregunta()));
+                result.Temas.AddRange(preguntas.Select(x => x.Tema).Distinct());
+
+                await uow.CommitChangesAsync();
+                return await GetByKey(result.Oid);
+            }
+        }
+        public async Task<Examen> GenerarExamen(int numeroPreguntas, params int[] keyTemas)
         {
             using (UnitOfWork uow = GetUnitOfWork())
             {
@@ -20,12 +46,21 @@ namespace OpoTest.Services
                 var result = new Examen(uow);
                 result.FechaInicio = DateTime.Now;
                 result.Temas.AddRange(temas);
-                result.Preguntas.AddRange(
-                    uow.Query<PlantillaPregunta>()
+
+                var claves = uow.Query<PlantillaPregunta>()
                     .Where(x => temas.Contains(x.Tema))
-                    .Take(numperoPreguntas)
-                    .Select(x => x.GenerarExamenPregunta())
-                );
+                    .Select(x => x.Oid)
+                    .ToList();
+                claves.Shuffle();
+
+
+                var preguntas = uow.GetObjectsByKey(
+                    uow.GetClassInfo<PlantillaPregunta>(),
+                    claves.Take(numeroPreguntas).ToList(), true)
+                    .OfType<PlantillaPregunta>();
+
+                result.Preguntas.AddRange(preguntas.Select(x => x.GenerarExamenPregunta()));
+
                 await uow.CommitChangesAsync();
                 return await GetByKey(result.Oid);
             }

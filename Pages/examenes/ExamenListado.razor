@@ -1,0 +1,139 @@
+﻿@page "/Examenes"
+
+@inject ExamenService ExamenesService
+@inject XpoService<Tema> TemasService
+@inject NavigationManager NavigationManager
+@inject IJSRuntime JSRuntime
+@inject IToastService toastService
+
+<h3>Examenes</h3>
+<DxDataGrid @ref="grid" DataAsync="token => ExamenesService.Get(token)"
+            KeyFieldName="Oid"
+            PageSize="10"
+            RowClick="x => { if(x.MouseEventArgs.Detail == 2) AbrirExamen(); }"
+            @bind-SingleSelectedDataRow="ExamenSelected">
+
+    <HeaderTemplate>
+        <DxToolbar>
+            <DxToolbarItem Text="Generar Examen" Click="x =>  PopupVisible = true" BeginGroup="true" />
+            <DxToolbarItem Text="Examen de fallos" Click="_=> GenerarExamenFallos()" />
+            <DxToolbarItem Text="Repetir Examen" Click="x => RepetirExamen()" Enabled="ExamenSelected != null" />
+            <DxToolbarItem Text="Abrir Examen" Click="x => AbrirExamen()" Enabled="ExamenSelected != null" BeginGroup="true" RenderStyle="ButtonRenderStyle.Primary" />
+            <DxToolbarItem Text="Borrar Examen" Click="x => BorrarExamen()" BeginGroup="true" RenderStyle="ButtonRenderStyle.Danger" />
+        </DxToolbar>
+    </HeaderTemplate>
+    <Columns>
+        <DxDataGridDateEditColumn Field=@nameof(Examen.FechaInicio) Caption="Fecha" SortIndex="0" SortOrder=DataGridColumnSortOrder.Descending />
+        <DxDataGridColumn>
+            <DisplayTemplate>
+                @if (context is Examen examen)
+                {
+                    @string.Join(" - ", examen.Temas.Select(x => x.Nombre));
+                }
+            </DisplayTemplate>
+        </DxDataGridColumn>
+        <DxDataGridColumn Field="TotalPreguntas" Caption="Nº Preguntas"/>
+        <DxDataGridColumn Caption="Nota">
+            <DisplayTemplate>
+                @if (context is Examen examen && examen.PreguntasPendientes == 0)
+                {
+                    <span>@(((double)examen.PreguntasCorrectas / examen.TotalPreguntas * 10).ToString("n2")) </span>
+                }
+            </DisplayTemplate>
+        </DxDataGridColumn>
+    </Columns>
+</DxDataGrid>
+<DxPopup HeaderText="Generar nuevo Examen" @bind-Visible="PopupVisible" CssClass="modal-lg" HeaderCssClass="bg-primary text-white" ShowCloseButton="false">
+    <ChildContent>
+        <DxFormLayout CaptionPosition="CaptionPosition.Vertical">
+            <DxFormLayoutItem Caption="Número de preguntas" ColSpanXs="12">
+                <Template>
+                    <DxSpinEdit @bind-Value="@NumeroPreguntas"></DxSpinEdit>
+                </Template>
+            </DxFormLayoutItem>
+            <DxFormLayoutItem Caption="Temas" ColSpanXs="12">
+                <Template>
+                    <DxListBox DataAsync="token => TemasService.Get(token)"
+                               TextFieldName="@nameof(Tema.DisplayFormat)"
+                               SelectionMode="ListBoxSelectionMode.Multiple"
+                               ShowCheckboxes="true"
+                               @bind-Values="@SelectedItems">
+                    </DxListBox>
+                </Template>
+            </DxFormLayoutItem>
+        </DxFormLayout>
+    </ChildContent>
+    <FooterTemplate>
+        <DxButton Text="Cancelar" RenderStyleMode="ButtonRenderStyleMode.Text" Click="x => PopupVisible = false" />
+        <DxButton Text="Generar" Click="x => GenerarExamenTemas()" />
+    </FooterTemplate>
+</DxPopup>
+@code {
+    DxDataGrid<Examen> grid;
+
+    bool popupVisible = false;
+    bool PopupVisible
+    {
+        get => popupVisible;
+        set
+        {
+            popupVisible = value;
+            InvokeAsync(StateHasChanged);
+        }
+    }
+
+    public Examen examenSelected;
+    public Examen ExamenSelected
+    {
+        get => examenSelected;
+        set
+        {
+            examenSelected = value;
+            InvokeAsync(StateHasChanged);
+        }
+    }
+
+    IEnumerable<Tema> SelectedItems { get; set; }
+    int NumeroPreguntas = 80;
+
+    private async void GenerarExamenTemas()
+    {
+        PopupVisible = false;
+        await ExamenesService.GenerarExamen(NumeroPreguntas, SelectedItems.Select(x => x.Oid).ToArray());
+        toastService.ShowSuccess("Examen creado con éxito.", "OK");
+        await grid.Refresh();
+        StateHasChanged();
+    }
+
+    private async void GenerarExamenFallos()
+    {
+        await ExamenesService.GenerarExamenFallos(80);
+        toastService.ShowSuccess("Examen creado con éxito.", "OK");
+        await grid.Refresh();
+        StateHasChanged();
+    }
+
+    private void AbrirExamen()
+    {
+        NavigationManager.NavigateTo($"Examenes/{examenSelected.Oid}");
+    }
+
+    private async void RepetirExamen()
+    {
+        await ExamenesService.RepetirExamen(examenSelected.Oid);
+        toastService.ShowSuccess("Examen copiado con éxito.", "OK");
+        await grid.Refresh();
+        StateHasChanged();
+    }
+
+    private async void BorrarExamen()
+    {
+        if (await JSRuntime.InvokeAsync<bool>("confirm", "¿Seguro que quieres borrar el examen?"))
+        {
+            await ExamenesService.Delete(examenSelected.Oid);
+            toastService.ShowSuccess("Examen borrado con éxito.", "OK");
+            await grid.Refresh();
+            StateHasChanged();
+        }
+    }
+}

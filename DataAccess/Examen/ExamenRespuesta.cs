@@ -6,6 +6,18 @@ namespace OpoTest
     {
         public ExamenRespuesta(Session session) : base(session) { }
 
+        protected override void OnChanged(string propertyName, object oldValue, object newValue)
+        {
+            base.OnChanged(propertyName, oldValue, newValue);
+            switch (propertyName)
+            {
+                case nameof(seleccionada):
+                    Pregunta?.RaiseEstadoChanged();
+                    break;
+
+            }
+        }
+
         private ExamenPregunta pregunta;
         [Association]
         [Aggregated]

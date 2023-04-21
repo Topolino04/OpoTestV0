@@ -39,7 +39,7 @@ namespace OpoTest
         }
 
         public bool? Estado => Respuestas.Any(x => x.Seleccionada == null) ? (bool?)null : Respuestas.All(x => x.Seleccionada == x.Correcta);
-
+        public void RaiseEstadoChanged() => OnChanged(nameof(Estado));
         [Association]
         public XPCollection<ExamenRespuesta> Respuestas => GetCollection<ExamenRespuesta>(nameof(Respuestas));
 
