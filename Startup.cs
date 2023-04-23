@@ -42,7 +42,7 @@ namespace OpoTest
             services.AddXpoDefaultDataLayer(ServiceLifetime.Singleton, dl => dl
                 .UseConnectionString(Configuration.GetConnectionString("SQLite"))
                 .UseThreadSafeDataLayer(true)
-                //.UseAutoCreationOption(DevExpress.Xpo.DB.AutoCreateOption.DatabaseAndSchema) // Remove this line if the database already exists
+                .UseAutoCreationOption(DevExpress.Xpo.DB.AutoCreateOption.DatabaseAndSchema) // Remove this line if the database already exists
                 .UseEntityTypes(System.Reflection.Assembly.GetExecutingAssembly().DefinedTypes.Where(x => x.GetInterface(typeof(DevExpress.Xpo.IXPSimpleObject).FullName) != null).ToArray()) // Pass all of your persistent object types to this method.
             );
 
