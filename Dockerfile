@@ -6,7 +6,11 @@ EXPOSE 80
 
 FROM mcr.microsoft.com/dotnet/sdk:6.0 AS build
 WORKDIR /src
+
 COPY ["OpoTest.csproj", "."]
+
+RUN dotnet nuget add source https://nuget.devexpress.com/nJ6ZyNhBfOHe5dQTRUbic8QgSMFTqQOsbwJPUmsWMPXpRCVQkN/api -n Devexpress
+
 RUN dotnet restore "./OpoTest.csproj"
 COPY . .
 WORKDIR "/src/."
