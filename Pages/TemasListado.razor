@@ -29,7 +29,7 @@
                         AllowSelectNodes="true"
                         SelectionChanged="SelectionChanged"
                         TextExpression=@(dataItem => ((Tema)dataItem).DisplayFormat)
-                        ChildrenExpression="@(dataItem => ((Tema)dataItem).Hijos)"
+                        ChildrenExpression="@(dataItem => ((Tema)dataItem).Hijos.OrderBy(x => x.Arbol))"
                         HasChildrenExpression="@(dataItem => ((Tema)dataItem).Hijos.Any())">
 
                 <NodeTextTemplate>
