@@ -19,7 +19,7 @@
             <DxToolbarItem Text="Examen de fallos" Click="_=> GenerarExamenFallos()" />
             <DxToolbarItem Text="Repetir Examen" Click="x => RepetirExamen()" Enabled="ExamenSelected != null" />
             <DxToolbarItem Text="Abrir Examen" Click="x => AbrirExamen()" Enabled="ExamenSelected != null" BeginGroup="true" RenderStyle="ButtonRenderStyle.Primary" />
-            <DxToolbarItem Text="Borrar Examen" Click="x => BorrarExamen()" BeginGroup="true" RenderStyle="ButtonRenderStyle.Danger" />
+            <DxToolbarItem Text="Borrar Examen" Click="x => BorrarExamen()"  Enabled="ExamenSelected != null" BeginGroup="true" RenderStyle="ButtonRenderStyle.Danger" />
         </DxToolbar>
     </HeaderTemplate>
     <Columns>
