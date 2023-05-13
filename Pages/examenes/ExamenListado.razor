@@ -53,7 +53,7 @@
             </DxFormLayoutItem>
             <DxFormLayoutItem Caption="Temas" ColSpanXs="12">
                 <Template>
-                    <DxListBox DataAsync="token => TemasService.Get(token)"
+                    <DxListBox DataAsync="async token => (await TemasService.Get(token)).OrderBy(x => x.Arbol).AsEnumerable()"
                                TextFieldName="@nameof(Tema.DisplayFormat)"
                                SelectionMode="ListBoxSelectionMode.Multiple"
                                ShowCheckboxes="true"
