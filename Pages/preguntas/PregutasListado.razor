@@ -1,27 +1,28 @@
-﻿
-@page "/Preguntas/{TemaOid:int}"
+﻿@page "/Preguntas/{TemaOid:int}"
 @page "/Preguntas"
 
 @attribute [Authorize]
-@inject XpoService<PlantillaPregunta> PreguntaService
+@inject PreguntaService PreguntaService
 @inject XpoService<PlantillaRespuesta> RespuestaService
 @inject XpoService<Tema> TemaService
 @inject NavigationManager NavigationManager
 @inject IJSRuntime JSRuntime
 @inject IToastService toastService
 
-<h3>@(Tema?.DisplayFormat ?? "Todos los temas")</h3>
+<h3>@(TemaFiltro?.DisplayFormat ?? "Todos los temas")</h3>
 <DxDataGrid DataAsync="DataAsync" KeyFieldName="Oid" @ref="GridPreguntas"
-            SelectionMode="DataGridSelectionMode.None"
+            SelectionMode="DataGridSelectionMode.MultipleSelectedDataRows"
+            @bind-MultipleSelectedDataRows=preguntasSeleccionadas
             ShowFilterRow=true
             ShowPager="true">
     <HeaderTemplate>
         <DxToolbar>
             <DxToolbarItem GroupName="FiltroNuevas" IconCssClass=@((VerNuevas?"fas fa-check-square":"far fa-square")) Text="Solo nuevas" @bind-Checked="VerNuevas" />
             <DxToolbarItem IconCssClass="fas fa-sync" Text="Refrescar" Click="_ => GridPreguntas.Refresh()" />
-
+            <DxToolbarItem IconCssClass="fas fa-filter" Text="Filtro por tema" Click="_ => PopupTemaFiltroVisible=true" />
             <DxToolbarItem CssClass="p-2" Alignment="ToolbarItemAlignment.Right" IconCssClass="fas fa-lg fa-plus" Text="Nueva pregunta" Click="x => InvokeAsync(() => AbrirFormulario())" BeginGroup="true" />
             <DxToolbarItem CssClass="p-2" Alignment="ToolbarItemAlignment.Right" IconCssClass="fas fa-lg fa-file-import" Text="Importar Preguntas" Click="x => { importador.IniciarImportacion(); GridPreguntas.Refresh(); }" />
+            <DxToolbarItem CssClass="p-2" Alignment="ToolbarItemAlignment.Right" IconCssClass="fas fa-lg fa-copy" Text="Duplicar seleccionadas" Click="_=> PopupTemaDuplicarVisible = true" />
         </DxToolbar>
     </HeaderTemplate>
     <Columns>
@@ -78,8 +79,45 @@
     </FooterTemplate>
 </DxPopup>
 
+<DxPopup @bind-Visible="PopupTemaDuplicarVisible" HeaderText="Selecciona un tema" CloseButtonClick="() => PopupTemaDuplicarVisible = false">
+    <ChildContent>
+        @preguntasSeleccionadas.Count() seleccionadas preguntas para duplicar
+        <DxTreeView Data="Temas"
+                    style="max-height:70vh;overflow-y: auto;"
+                    AllowSelectNodes="true"
+                    SelectionChanged="e => temaDuplicar = e.NodeInfo.DataItem as Tema"
+                    TextExpression=@(dataItem => ((Tema)dataItem).DisplayFormat)
+                    ChildrenExpression="@(dataItem => ((Tema)dataItem).Hijos.OrderBy(x => x.Arbol))"
+                    HasChildrenExpression="@(dataItem => ((Tema)dataItem).Hijos.Any())" />
+    </ChildContent>
+    <FooterTemplate>
+        <div class="text-right">
+            <DxButton Text="Cancelar" RenderStyleMode="ButtonRenderStyleMode.Text" Click="x => PopupTemaDuplicarVisible = false" />
+            <DxButton Text="Duplicar" Click="x => DuplicarPreguntas()" />
+        </div>
+    </FooterTemplate>
+</DxPopup>
 
-<PreguntasImportador @ref="importador" Tema="Tema" />
+    @{Tema temaSeleccionado = null;}
+<DxPopup @bind-Visible="PopupTemaFiltroVisible" HeaderText="Selecciona un tema" CloseButtonClick="() => PopupTemaFiltroVisible = false">
+    <ChildContent>
+        <DxTreeView Data="Temas"
+                    style="max-height:70vh;overflow-y: auto;"
+                    AllowSelectNodes="true"
+                    SelectionChanged="e => temaSeleccionado = e.NodeInfo.DataItem as Tema"
+                    TextExpression=@(dataItem => ((Tema)dataItem).DisplayFormat)
+                    ChildrenExpression="@(dataItem => ((Tema)dataItem).Hijos.OrderBy(x => x.Arbol))"
+                    HasChildrenExpression="@(dataItem => ((Tema)dataItem).Hijos.Any())" />
+    </ChildContent>
+    <FooterTemplate>
+        <div class="text-right">
+            <DxButton Text="Cancelar" RenderStyleMode="ButtonRenderStyleMode.Text" Click="x => PopupTemaDuplicarVisible = false" />
+            <DxButton Text="Filtrar" Click="x =>  { TemaFiltro = temaSeleccionado; PopupTemaFiltroVisible=false;}" />
+        </div>
+    </FooterTemplate>
+</DxPopup>
+
+<PreguntasImportador @ref="importador" Tema="TemaFiltro" />
 
 @code {
     PopupInfo popUpInfo;
@@ -98,15 +136,27 @@
             InvokeAsync(StateHasChanged);
         }
     }
-
-    bool popupTemasVisible;
-    bool PopupTemasVisible
+    bool popupTemaVisible;
+    bool PopupTemaDuplicarVisible
     {
-        get => popupTemasVisible;
+        get => popupTemaVisible;
         set
         {
-            if (popupTemasVisible == value) return;
-            popupTemasVisible = value;
+            if (popupTemaVisible == value) return;
+            if (popupTemaVisible) temaDuplicar = null;
+            popupTemaVisible = value;
+            InvokeAsync(StateHasChanged);
+        }
+    }
+
+    bool popupTemaFiltroVisible;
+    bool PopupTemaFiltroVisible
+    {
+        get => popupTemaFiltroVisible;
+        set
+        {
+            if (popupTemaFiltroVisible == value) return;
+            popupTemaFiltroVisible = value;
             InvokeAsync(StateHasChanged);
         }
     }
@@ -114,7 +164,20 @@
     DxDataGrid<PlantillaPregunta> GridPreguntas;
     [Parameter]
     public int TemaOid { get; set; }
-    public Tema Tema { get; set; }
+
+    IQueryable<Tema> Temas;
+
+    Tema temaFiltro, temaDuplicar;
+    public Tema TemaFiltro
+    {
+        get => temaFiltro;
+        set
+        {
+            temaFiltro = value;
+            GridPreguntas?.Refresh();
+        }
+    }
+
 
     string filtro;
     string Filtro
@@ -144,19 +207,24 @@
 
     protected override async Task OnInitializedAsync()
     {
-        Tema = await TemaService.GetByKey(TemaOid);
+        TemaFiltro = await TemaService.GetByKey(TemaOid);
+        Temas = (await TemaService.Get()).Where(x => x.Padre == null).OrderBy(x => x.Arbol).AsQueryable();
+
     }
+
+    IEnumerable<PlantillaPregunta> preguntasSeleccionadas = new PlantillaPregunta[0];
 
     async Task<IEnumerable<PlantillaPregunta>> DataAsync(System.Threading.CancellationToken token)
     {
         try
         {
             var query = await PreguntaService.Get();
-            if (TemaOid != 0)
+            if (TemaFiltro != null)
             {
-                var t = await TemaService.GetByKey(TemaOid);
-                List<int> temas = new List<int> { TemaOid };
-                temas.AddRange(t.AllTemas.Select(x => x.Oid));
+                var temas = temaFiltro.GetAllTemas()
+                .Select(x => x.Oid)
+                .Append(TemaFiltro.Oid)
+                .ToList();
                 query = query.Where(x => temas.Contains(x.Tema.Oid));
             }
             if (!string.IsNullOrWhiteSpace(Filtro))
@@ -174,7 +242,7 @@
         }
         catch (Exception ex)
         {
-            toastService.ShowError(ex.Message, "Error");
+            toastService.ShowError(ex.ToString(), "Error");
             throw;
         }
     }
@@ -217,6 +285,32 @@
         {
             toastService.ShowError(ex.Message, "ERROR");
         }
+
+
+
+    }
+
+    void DuplicarPreguntas()
+    {
+        if (temaDuplicar == null)
+        {
+            toastService.ShowError("Seleccina un tema");
+            return;
+        }
+
+        if (!preguntasSeleccionadas.Any())
+        {
+            toastService.ShowError("Seleccina preguntas");
+            return;
+        }
+
+        PreguntaService.DuplicarPreguntas(preguntasSeleccionadas, temaDuplicar);
+
+        GridPreguntas.Refresh();
+        PopupTemaDuplicarVisible = false;
+        toastService.ShowSuccess("Preguntas duplicadas");
+            
+
     }
 
     public class Datos

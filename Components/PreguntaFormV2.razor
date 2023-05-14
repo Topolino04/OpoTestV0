@@ -15,7 +15,7 @@
                 <DxFormLayoutTabPage Caption="Pregunta">
                     <DxFormLayoutItem Caption="Tema:" ColSpanMd="12">
                         <Template>
-                            <DxComboBox @bind-Value=pregunta.Tema DataAsync="x => TemaService.Get(x)" TextFieldName="DisplayFormat" />
+                            <DxComboBox @bind-Value=pregunta.Tema DataAsync="async x => (await TemaService.Get(x)).OrderBy(y => y.Arbol).AsEnumerable()" TextFieldName="DisplayFormat" />
                         </Template>
                     </DxFormLayoutItem>
                     <DxFormLayoutItem Caption="Enunciado:" ColSpanMd="12" Field="Enunciado">

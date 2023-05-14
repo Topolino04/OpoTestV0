@@ -1,4 +1,5 @@
 ﻿using DevExpress.Xpo;
+using DevExpress.Xpo.Metadata;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -51,7 +52,13 @@ namespace OpoTest
         [Association("TemasGerarquia")]
         public XPCollection<Tema> Hijos => GetCollection<Tema>(nameof(Hijos));
 
-        public IEnumerable<Tema> AllTemas => Session.GetObjectsByKeyFromQuery(ClassInfo, false, $"WITH q AS ( SELECT OID FROM Tema WHERE OID = {Oid} UNION ALL SELECT H.OID FROM Tema H, q P WHERE H.Padre = P.OID) SELECT * FROM q where OID != {Oid}").OfType<Tema>();
+        public IEnumerable<Tema> GetAllTemas()
+        {
+            string sql = $"WITH q AS ( SELECT OID FROM Tema WHERE OID = {Oid} UNION ALL SELECT H.OID FROM Tema H, q P WHERE H.Padre = P.OID) SELECT * FROM q where OID != {Oid}";
+            var ids = Session.ExecuteQuery(sql).ResultSet[0].Rows.Select(x => x.Values[0])
+                .OfType<long>().ToList().Select(x => (int)x).ToList().ToList();
+                return Session.GetObjectsByKey(ClassInfo, ids, false).OfType<Tema>();
+        }
 
     }
 }

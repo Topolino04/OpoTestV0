@@ -52,6 +52,7 @@ namespace OpoTest
             services.AddScoped<XpoService<ExamenRespuesta>>();
 
             services.AddScoped<XpoService<PlantillaPregunta>>();
+            services.AddScoped<PreguntaService>();
             services.AddScoped<XpoService<PlantillaRespuesta>>();
             services.AddScoped<XpoService<Tema>>();
 
